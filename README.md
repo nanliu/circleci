@@ -1,6 +1,9 @@
-# circleci custom container
+# Circle CI Container
 
-circleci custom container with helm/kubectl for kubernetes testing
+[![CircleCI](https://circleci.com/gh/nanliu/circleci.svg?style=svg)](https://circleci.com/gh/nanliu/circleci)
+[![](https://images.microbadger.com/badges/image/nanliu/circleci.svg)](https://microbadger.com/images/nanliu/circleci)
+
+Custom Circle CI container with:
 
 * kubectl
 * helm

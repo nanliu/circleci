@@ -18,3 +18,5 @@ jobs:
 
             docker build . -t nanliu/circleci:latest
             docker push nanliu/circleci:latest
+
+            curl -X POST https://hooks.microbadger.com/images/nanliu/circleci/g05525pyv2nt05fU5l8ZabGZyGE=
