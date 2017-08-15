@@ -16,7 +16,21 @@ jobs:
             id=$(docker create git-crypt)
             docker cp $id:/tmp/ ./pkg
 
-            docker build . -t nanliu/circleci:latest
-            docker push nanliu/circleci:latest
+            MUNGED_BRANCH=$(echo $CIRCLE_BRANCH | tr '/' '_')
+            docker build . \
+              -t nanliu/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1} \
+              -t nanliu/${CIRCLE_PROJECT_REPONAME}:${MUNGED_BRANCH} \
+              --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+              --build-arg GIT_SHA1=${CIRCLE_SHA1} \
+              --build-arg GIT_TAG=${CIRCLE_TAG}
+
+            if [[ -n "${CIRCLE_TAG}" ]]; then
+              docker nanliu/${CIRCLE_PROJECT_REPONAME}:${MUNGED_BRANCH} nanliu/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}
+              docker push nanliu/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}
+              docker push nanliu/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}
+            else
+              docker push nanliu/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}
+              docker push nanliu/${CIRCLE_PROJECT_REPONAME}:${MUNGED_BRANCH}
+            fi
 
             curl -X POST https://hooks.microbadger.com/images/nanliu/circleci/g05525pyv2nt05fU5l8ZabGZyGE=

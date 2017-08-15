@@ -1,8 +1,19 @@
 FROM circleci/python:2.7
 
+ARG BUILD_DATE
+ARG GIT_SHA1
+ARG GIT_TAG
+
 ARG KUBERNETES_VERSION="v1.6.4"
 ARG HELM_VERSION="v2.5.0"
 ARG TERRAFORM_VERSION="0.10.0"
+
+LABEL maintainer="Nan Liu" \
+      org.label-schema.name="circleci" \
+      org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.vcs-url="https://github.com/nanliu/circleci" \
+      org.label-schema.vcs-ref=$GIT_SHA1 \
+      org.label-schema.version=$GIT_TAG
 
 USER root
 

@@ -7,4 +7,5 @@ Custom Circle CI container with:
 
 * kubectl
 * helm
+* git-crypt
 * terraform
