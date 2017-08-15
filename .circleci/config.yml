@@ -1,0 +1,20 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: docker:1.13.1-git
+    working_directory: ~/circleci
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: docker build
+          command: |
+            docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
+
+            docker build git-crypt/ -t git-crypt
+            id=$(docker create git-crypt)
+            docker cp $id:/tmp/ ./pkg
+
+            docker build . -t nanliu/circleci:latest
+            docker push nanliu/circleci:latest
