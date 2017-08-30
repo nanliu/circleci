@@ -71,6 +71,6 @@ RUN mkdir -p "$(helm home)/plugins" && \
 # NOTE: Silent parallel
 RUN echo "will cite\n" | parallel --bibtex
 
-COPY scripts/ /scripts/
+COPY scripts/ /usr/local/bin
 
 CMD ["/bin/bash"]
