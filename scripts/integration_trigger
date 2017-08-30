@@ -1,26 +1,33 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -eu -o pipefail
 
 export CIRCLECI_CLI_TOKEN="${CIRCLE_TOKEN}"
 
-ORG_NAME="${ORG_NAME:-}"
-TARGET_REPONAME="${TARGET_REPONAME:-}"
-HELM_BRANCH="${HELM_BRANCH:-master}"
-STATUS_URL="https://api.github.com/repos/${ORG_NAME}/${CIRCLE_PROJECT_REPONAME}/statuses/${CIRCLE_SHA1}"
-build=$(circleci trigger "${ORG_NAME}/${TARGET_REPONAME}" "${HELM_BRANCH}" -K CUSTOM_VALUES -V "${CUSTOM_VALUES}" -K STATUS_URL -V "${STATUS_URL}" -K PR_URL -V "${CIRCLE_PULL_REQUESTS}")
-
-build_id=$(echo "${build}" | jq '.build_num')
-[[ -n "${build_id}" ]] || (echo "${build}" && exit 1)
-echo "https://circleci.com/gh/${ORG_NAME}/${TARGET_REPONAME}/${build_id}"
-
-curl \
-  --header "Authorization: token ${GH_OAUTH_TOKEN}" \
-  --request POST "${STATUS_URL}" \
-  --data @- <<EOF
-  {
-    "state": "pending",
-    "target_url": "https://circleci.com/gh/${ORG_NAME}/${TARGET_REPONAME}/${build_id}",
-    "description": "The integration build ${build_id} started",
-    "context": "ci/circleci-integration"
-  }
+_usage() {
+  echo "${*}"
+cat << EOF
+usage: integration_trigger
+environment:
+  ORG_NAME: the github organization
+  REPO_NAME: the github repo name
+  BRANCH_NAME: the test branch name
 EOF
+  exit 1
+}
+
+[[ -n "${ORG_NAME:-$CIRCLE_PROJECT_USERNAME}" ]]
+[[ -n "${REPO_NAME:-$CIRCLE_PROJECT_REPONAME}" ]]
+BRANCH_NAME="${BRANCH_NAME:-master}"
+
+STATUS_URL="https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/statuses/${CIRCLE_SHA1}"
+
+circleci trigger "${ORG_NAME}/${REPO_NAME}" "${BRANCH_NAME}" \
+  -K CUSTOM_VALUES -V "${CUSTOM_VALUES}" \
+  -K STATUS_URL -V "${STATUS_URL}" \
+  -K PR_URL -V "${CIRCLE_PULL_REQUESTS}" | tee /tmp/circleci.$$
+
+build_num=$(jq '.build_num' < /tmp/circleci.$$)
+[[ -n "${build_num}" ]] || (echo "missing build_num" && exit 1)
+
+target_url="https://circleci.com/gh/${ORG_NAME}/${REPO_NAME}/${build_num}"
+gh_status "pending" "$target_url" "The integration build ${build_num} started"
