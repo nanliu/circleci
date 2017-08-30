@@ -2,6 +2,7 @@
 set -eu -o pipefail
 
 if [[ -n "${PIPBOT_PEM:-}" ]]; then
+  echo "building container with secret bootstrap"
   docker build . \
     -t "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" \
     --build-arg PIPBOT_PEM="${PIPBOT_PEM}" \
@@ -9,6 +10,7 @@ if [[ -n "${PIPBOT_PEM:-}" ]]; then
     --build-arg GIT_SHA1="${CIRCLE_SHA1}" \
     --build-arg GIT_TAG="${CIRCLE_TAG:-}"
 else
+  echo "building container without secrets"
   docker build . \
     -t "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" \
     --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
@@ -19,20 +21,22 @@ fi
 MUNGED_BRANCH=$(echo "$CIRCLE_BRANCH" | tr '/' '_')
 
 if [[ -n "${QUAY_USER:-}" ]]; then
+  echo "pushing container to quay.io"
   docker login -u "${QUAY_USER}" -p "${QUAY_PASS}" quay.io
   docker tag "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}"
-  docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}"
+  docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" || echo "${CIRCLE_SHA1} push to quay.io failed"
 
   if [[ -n "${CIRCLE_TAG:-}" ]]; then
     docker tag "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
-    docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
+    docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}" || echo "${CIRCLE_TAG} push to quay.io failed"
   else
     docker tag "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${MUNGED_BRANCH}"
-    docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${MUNGED_BRANCH}"
+    docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${MUNGED_BRANCH}" || echo "${MUNGED_BRANCH} push to quay.io failed"
   fi
 fi
 
 if [[ -n "${GOOGLE_AUTH:-}" ]]; then
+  echo "pushing container to gcr.io"
   echo "${GOOGLE_AUTH}" | base64 -d > /tmp/gcp-key.json
   gcloud auth activate-service-account --key-file /tmp/gcp-key.json
   gcloud config set project "${GOOGLE_PROJECT_ID}"
