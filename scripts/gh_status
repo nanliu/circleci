@@ -1,0 +1,46 @@
+#!/bin/bash
+set -eu -o pipefail
+
+_usage() {
+  echo "${*}"
+cat << EOF
+usage: gh_status <target_url> <state> <description>
+environment:
+  STATUS_URL: the github url(s) to post the status (comma seperated)
+example:
+  STATUS_URL="https://api.github.com/repos/org/repo_name/statuses/git_sha"
+  gh_status nanliu/circleci "pending" "The integration has started"
+EOF
+  exit 1
+}
+
+_update() {
+  local url=$1
+  local state=$2
+  local target_url=$3
+  local desription=$4
+  curl \
+    --header "Authorization: token ${GH_OAUTH_TOKEN}" \
+    --request POST "${url}" \
+    --data @- <<EOF
+{
+  "state": "${state}",
+  "target_url": "${target_url}",
+  "description": "${description}",
+  "context": "ci/circleci-integration"
+}
+EOF
+}
+
+#[[ -n "${CIRCLECI:-}" ]] || exit 1
+[[ -n "${STATUS_URL:-}" ]] || _usage "missing status_url"
+
+[[ $# -lt 3 ]] && _usage "missing parameters"
+target_url=$1
+state=$2
+description=$3
+
+IFS=','
+for url in $STATUS_URL; do
+  update "$url" "$state" "$target_url" "$description"
+done
