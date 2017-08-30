@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+PULL_QUAY="${PULL_QUAY:-false}"
+BASE_QUAY_REPO="quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}"
+BASE_GCR_REPO="gcr.io/${GOOGLE_PROJECT_ID}/${CIRCLE_PROJECT_REPONAME}"
+
+if [[ -n "${GOOGLE_AUTH:-}" ]] && [[ -n "${QUAY_USER}" ]]; then
+  echo "pulling container with matching sha from registry"
+  echo "${GOOGLE_AUTH}" | base64 -d > /tmp/gcp-key.json
+  gcloud auth activate-service-account --key-file /tmp/gcp-key.json
+  gcloud config set project "${GOOGLE_PROJECT_ID}"
+  docker login -u "${QUAY_USER}" -p "${QUAY_PASS}" quay.io
+
+  gcloud docker pull "${BASE_GCR_REPO}:${CIRCLE_SHA1}" || /
+  ( docker pull "${BASE_QUAY_REPO}:${CIRCLE_SHA1}" && PULL_QUAY=true )
+
+  if [[ PULL_QUAY=="false" ]]; then
+    docker tag "${BASE_GCR_REPO}:${CIRCLE_SHA1}" "${BASE_GCR_REPO}:${CIRCLE_TAG}"
+    docker tag "${BASE_GCR_REPO}:${CIRCLE_SHA1}" "${BASE_QUAY_REPO}:${CIRCLE_TAG}"
+  else
+    docker tag "${BASE_QUAY_REPO}:${CIRCLE_SHA1}" "${BASE_GCR_REPO}:${CIRCLE_TAG}"
+    docker tag "${BASE_QUAY_REPO}:${CIRCLE_SHA1}" "${BASE_QUAY_REPO}:${CIRCLE_TAG}"
+  fi
+  echo "pushing git tagged container"
+  docker push "${BASE_QUAY_REPO}:${CIRCLE_TAG}"
+  gcloud docker -- push "${BASE_GCR_REPO}:${CIRCLE_TAG}"
+
+  docker tag "gcr.io/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" "gcr.io/${GOOGLE_PROJECT_ID}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
+  gcloud docker -- push "gcr.io/${GOOGLE_PROJECT_ID}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
+fi
