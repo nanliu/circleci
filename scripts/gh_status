@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -eu -o pipefail
 
 _usage() {
@@ -18,7 +18,7 @@ _update() {
   local url=$1
   local state=$2
   local target_url=$3
-  local desription=$4
+  local description=$4
   curl \
     --header "Authorization: token ${GH_OAUTH_TOKEN}" \
     --request POST "${url}" \
@@ -42,5 +42,5 @@ description=$3
 
 IFS=','
 for url in $STATUS_URL; do
-  update "$url" "$state" "$target_url" "$description"
+  _update "$url" "$state" "$target_url" "$description"
 done
