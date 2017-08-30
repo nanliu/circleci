@@ -7,13 +7,13 @@ if [[ -n "${PIPBOT_PEM:-}" ]]; then
     --build-arg PIPBOT_PEM="${PIPBOT_PEM}" \
     --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
     --build-arg GIT_SHA1="${CIRCLE_SHA1}" \
-    --build-arg GIT_TAG="${CIRCLE_TAG}"
+    --build-arg GIT_TAG="${CIRCLE_TAG:-}"
 else
   docker build . \
     -t "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" \
     --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
     --build-arg GIT_SHA1="${CIRCLE_SHA1}" \
-    --build-arg GIT_TAG="${CIRCLE_TAG}"
+    --build-arg GIT_TAG="${CIRCLE_TAG:-}"
 fi
 
 MUNGED_BRANCH=$(echo "$CIRCLE_BRANCH" | tr '/' '_')
