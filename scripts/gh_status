@@ -4,7 +4,7 @@ set -eu -o pipefail
 _usage() {
   echo "${*}"
 cat << EOF
-usage: gh_status <target_url> <state> <description>
+usage: gh_status <state> <target_url> <description>
 environment:
   STATUS_URL: the github url(s) to post the status (comma seperated)
 example:
@@ -36,8 +36,8 @@ EOF
 [[ -n "${STATUS_URL:-}" ]] || _usage "missing status_url"
 
 [[ $# -lt 3 ]] && _usage "missing parameters"
-target_url=$1
-state=$2
+state=$1
+target_url=$2
 description=$3
 
 IFS=','
