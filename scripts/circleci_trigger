@@ -1,0 +1,24 @@
+#!/bin/bash
+set -eu -o pipefail
+
+export CIRCLECI_CLI_TOKEN="${CIRCLE_TOKEN}"
+export STATUS_URL="${STATUS_URL}"
+
+_usage() {
+  echo "${*}"
+cat << EOF
+usage: circleci_trigger <org/repo> <branch> [-K KEY -V VALUE]
+EOF
+  exit 1
+}
+
+REPO=$1
+
+circleci trigger $@ \
+  -K PR_URL -V "${CIRCLE_PULL_REQUESTS}" | tee /tmp/circleci.$$
+
+build_num=$(jq '.build_num' < /tmp/circleci.$$)
+[[ -n "${build_num}" ]] || (echo "missing build_num" && exit 1)
+
+target_url="https://circleci.com/gh/${REPO}/${build_num}"
+gh_status "pending" "$target_url" "The integration build ${build_num} started"
