@@ -20,7 +20,7 @@ ARG HELM_VERSION="v2.5.0"
 ARG TERRAFORM_VERSION="0.10.2"
 # NOTE: Using my branch to fix quoting issue:
 ARG CIRCLE_CLI_VERSION="quote"
-ARG HUB_VERSION="2.3.0"
+ARG HUB_VERSION="2.3.0-pre10"
 
 LABEL maintainer="Nan Liu" \
       org.label-schema.name="circleci" \
@@ -42,7 +42,7 @@ COPY --from=0 /tmp/*.deb /tmp/
 RUN dpkg -i /tmp/*.deb
 
 RUN curl -sfL https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && \
-   chmod 755 /usr/local/bin/kubectl
+    chmod 755 /usr/local/bin/kubectl
 RUN curl -sfL http://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz -o /tmp/helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     tar xzf /tmp/helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/local/bin && \
@@ -53,15 +53,17 @@ RUN curl -sfL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terr
     rm /tmp/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 RUN curl -sfL https://raw.githubusercontent.com/nanliu/circleci-cli/${CIRCLE_CLI_VERSION}/src/circleci -o /usr/local/bin/circleci && \
     chmod 755 /usr/local/bin/circleci
-RUN curl -fL https://github.com/github/hub/releases/download/v${HUB_VERSION}-pre10/hub-linux-amd64-${HUB_VERSION}-pre10.tgz -o /tmp/hub-linux-amd64-${HUB_VERSION}-pre10.tgz && \
-    tar xzf /tmp/hub-linux-amd64-${HUB_VERSION}-pre10.tgz && \
-    mv hub-linux-amd64-${HUB_VERSION}-pre10/bin/hub /usr/local/bin && \
-    rm /tmp/hub-linux-amd64-${HUB_VERSION}-pre10.tgz && rm -r hub-linux-amd64-${HUB_VERSION}-pre10
+RUN curl -fL https://github.com/github/hub/releases/download/v${HUB_VERSION}/hub-linux-amd64-${HUB_VERSION}.tgz -o /tmp/hub-linux-amd64-${HUB_VERSION}.tgz && \
+    tar xzf /tmp/hub-linux-amd64-${HUB_VERSION}.tgz && \
+    mv hub-linux-amd64-${HUB_VERSION}/bin/hub /usr/local/bin && \
+    rm /tmp/hub-linux-amd64-${HUB_VERSION}.tgz && rm -r hub-linux-amd64-${HUB_VERSION}
 RUN curl -sSLo google-cloud-sdk.tar.gz https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz \
     && tar zxvf google-cloud-sdk.tar.gz \
     && rm google-cloud-sdk.tar.gz \
     && ./google-cloud-sdk/install.sh --usage-reporting=true --path-update=tru \
     && ln -s /google-cloud-sdk/bin/gcloud /usr/local/bin/
+
+RUN pip install pyyaml requests
 
 USER circleci
 
