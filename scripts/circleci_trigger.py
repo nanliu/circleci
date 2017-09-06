@@ -8,12 +8,11 @@ import gh_status
 
 class CircleCI():
     def __init__(self, repo, branch):
-        status_url = [
-            'https://api.github.com/repos/{}/{}/statuses/{}'.format(
-                os.environ.get('CIRCLE_PROJECT_USERNAME'),
-                os.environ.get('CIRCLE_PROJECT_REPONAME'),
-                os.environ.get('CIRCLE_SHA1'),
-            )]
+        status_url = 'https://api.github.com/repos/{}/{}/statuses/{}'.format(
+            os.environ.get('CIRCLE_PROJECT_USERNAME'),
+            os.environ.get('CIRCLE_PROJECT_REPONAME'),
+            os.environ.get('CIRCLE_SHA1')
+        )
 
         self.build_param = {
             'PR_URL': os.environ.get('CIRCLE_PULL_REQUESTS'),
@@ -24,7 +23,7 @@ class CircleCI():
         self._auth = base64.standard_b64encode('{}:'.format(token))
 
         # NOTE: https://circleci.com/docs/api/v1-reference/#new-build-branch
-        self._url = "https://circleci.com/api/v1.1/project/github/{}/tree/{}".\
+        self._url = 'https://circleci.com/api/v1.1/project/github/{}/tree/{}'.\
             format(repo, branch)
 
     def integration(self):
@@ -40,9 +39,10 @@ class CircleCI():
 
     def status_pending(self):
         if self._build_url is None:
-            raise Exception("No build has been triggered.")
-        msg = "The integration build {} started".format(self._build_num)
-        for url in self.build_param["STATUS_URL"]:
+            raise Exception('No build has been triggered.')
+        msg = 'The integration build {} started'.format(self._build_num)
+
+        for url in self.build_param['STATUS_URL'].split(','):
             gh_status.update(url, 'pending', self._build_url, msg)
 
 
@@ -50,8 +50,8 @@ def arg_parser():
     p = argparse.ArgumentParser()
     p.add_argument('-K', '--KEY', action='append', nargs=1)
     p.add_argument('-V', '--VALUE', action='append', nargs=1)
-    p.add_argument('repo', type=str, help="github org/repo")
-    p.add_argument('branch', type=str, help="git branch to test")
+    p.add_argument('repo', type=str, help='github org/repo')
+    p.add_argument('branch', type=str, help='git branch to test')
     return p.parse_args()
 
 
