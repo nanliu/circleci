@@ -18,25 +18,20 @@ import requests
 import yaml
 import circleci_trigger
 
-github_token = os.environ['GH_OAUTH_TOKEN']
 
 class Pull_Request:
     def __init__(self, url):
         self.url = url
-        self.description = ''
-        self.repo = ''
-        self.sha1 = ''
-        self.number = ''
-        self.owner = ''
-    def get_info(self):
-        api_pr_url = (self.url.replace("https://github.com","https://api.github.com/repos",1)).replace("pull", "pulls")
+        api_pr_url = (url.replace("https://github.com","https://api.github.com/repos",1)).replace("pull", "pulls")
+        github_token = os.environ['GH_OAUTH_TOKEN']
         auth_headers = {'Authorization': 'token {}'.format(github_token)}
-        pr_json = requests.get(api_pr_url, headers=auth_headers).json()
-        self.description = pr_json['body']
-        self.repo = pr_json['head']['repo']['name']
-        self.sha1 = pr_json['head']['sha']
-        self.number = pr_json['number']
-        self.owner = pr_json['head']['repo']['owner']['login']
+        pr = requests.get(api_pr_url, headers=auth_headers).json()
+        self.description = pr['body']
+        self.repo = pr['head']['repo']['name']
+        self.sha1 = pr['head']['sha']
+        self.number = pr['number']
+        self.owner = pr['head']['repo']['owner']['login']
+
 
 def get_pr_yaml(yaml_indentifier, pr_description, delimiter):
   """
@@ -77,7 +72,6 @@ def get_pull_requests_from_yaml(pr_yaml, current_pull_request):
   # Add pull request values from yaml
   for pr in pr_yaml['pull_requests']:
     pull_request_object = Pull_Request(pr)
-    pull_request_object.get_info()
     pull_requests_objects.append(pull_request_object)
   return pull_requests_objects
 
@@ -111,7 +105,6 @@ def main():
   pull_request_url = os.environ['CIRCLE_PULL_REQUEST']
   c = circleci_trigger.CircleCI(args.repo,args.branch)
   current_pull_request = Pull_Request(pull_request_url)
-  current_pull_request.get_info()
   pr_yaml = get_pr_yaml('pull_requests:', current_pull_request.description, '```')
   if pr_yaml:
     print "YAML found, generating custom values."
@@ -134,6 +127,12 @@ def main():
     c.build_param['STATUS_URL'] = status_urls
     c.build_param['PR_URL'] = pr_urls
     print c.build_param
+  else:
+    c.build_param['CUSTOM_VALUES'] = '"{}": {{"repo": "{}","tag": "{}"}}'.format(
+      current_pull_request.repo.replace('-','_'),
+      current_pull_request.repo,
+      current_pull_request.sha1
+    )
 
   c.integration()
   c.status_pending()
