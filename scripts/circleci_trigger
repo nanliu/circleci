@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import circleci_trigger
+
+circleci_trigger.cli()
