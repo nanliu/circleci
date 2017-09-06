@@ -6,7 +6,7 @@ import requests
 
 def arg_parser():
     p = argparse.ArgumentParser()
-    p.add_argument('-u', '--url', action='append', nargs=1,
+    p.add_argument('-u', '--url', default=os.environ.get('STATUS_URL'),
                    help='git commit sha1 URL')
     p.add_argument('state', type=str,
                    help='CI state (running, success, failed)')
@@ -33,5 +33,5 @@ def update(url, state, target, desc):
 def cli():
     args = arg_parser()
 
-    for val in args.url:
-        update(val[0], args.state, args.target, args.description)
+    for url in args.url.split(','):
+        update(url, args.state, args.target, args.description)
