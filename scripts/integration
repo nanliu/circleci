@@ -45,6 +45,8 @@ def get_pr_yaml(yaml_indentifier, pr_description, delimiter):
   Returns:
   (string): yaml from pull request
   """
+  if not pr_description:
+    return None
   pr_description_array = pr_description.split(delimiter)
 
   for s in pr_description_array:
