@@ -141,7 +141,7 @@ def main():
       raise Exception('each -K key must have matching -V')
     else:
       for i, val in enumerate(args.KEY):
-        circle.build_param[val[0]] = args.VALUE[i][0]
+        c.build_param[val[0]] = args.VALUE[i][0]
 
   c.integration()
   c.status_pending()
