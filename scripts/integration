@@ -96,6 +96,8 @@ def generate_custom_values(pull_requests):
 
 def arg_parser():
   p = argparse.ArgumentParser()
+  p.add_argument('-K', '--KEY', action='append', nargs=1)
+  p.add_argument('-V', '--VALUE', action='append', nargs=1)
   p.add_argument('repo', type=str, help='github org/repo')
   p.add_argument('branch', type=str, help='git branch to test')
   return p.parse_args()
@@ -133,6 +135,11 @@ def main():
       current_pull_request.repo,
       current_pull_request.sha1
     )
+    if len(args.KEY) != len(args.VALUE):
+      raise Exception('each -K key must have matching -V')
+    else:
+      for i, val in enumerate(args.KEY):
+        circle.build_param[val[0]] = args.VALUE[i][0]
 
   c.integration()
   c.status_pending()
