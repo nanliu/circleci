@@ -11,8 +11,6 @@ pull_requests:
 
 """
 import argparse
-import collections
-import json
 import os
 import requests
 import yaml
@@ -22,129 +20,152 @@ import circleci_trigger
 class Pull_Request:
     def __init__(self, url):
         self.url = url
-        api_pr_url = (url.replace("https://github.com","https://api.github.com/repos",1)).replace("pull", "pulls")
+        api_pr_url = (url.replace("https://github.com", "https://api.github.com/repos", 1)
+                     ).replace("pull", "pulls")
         github_token = os.environ['GH_OAUTH_TOKEN']
         auth_headers = {'Authorization': 'token {}'.format(github_token)}
-        pr = requests.get(api_pr_url, headers=auth_headers).json()
-        self.description = pr['body']
-        self.repo = pr['head']['repo']['name']
-        self.sha1 = pr['head']['sha']
-        self.number = pr['number']
-        self.owner = pr['head']['repo']['owner']['login']
+        pull_request = requests.get(api_pr_url, headers=auth_headers).json()
+        self.description = pull_request['body']
+        self.repo = pull_request['head']['repo']['name']
+        self.sha1 = pull_request['head']['sha']
+        self.number = pull_request['number']
+        self.owner = pull_request['head']['repo']['owner']['login']
 
+    def get_description_urls(self, yaml_indentifier, delimiter):
+        """
+        Gets yaml in the pull request description. Otherwise returns None.
 
-def get_pr_yaml(yaml_indentifier, pr_description, delimiter):
-  """
-  Gets yaml in the pull request description. Otherwise returns None.
+        Args:
+        yaml_identifier (string): string used to search for yaml block
+        pr_description (string): Pull request description
+        delimeter (string): determines how to split pull request description
 
-  Args:
-  yaml_identifier (string): string used to search for yaml block
-  pr_description (string): Pull request description
-  delimeter (string): determines how to split pull request description
+        Returns:
+        (string): yaml from pull request
+        """
+        if not self.description:
+            return None
+        description_array = self.description.split(delimiter)
 
-  Returns:
-  (string): yaml from pull request
-  """
-  if not pr_description:
-    return None
-  pr_description_array = pr_description.split(delimiter)
+        for string in description_array:
+            if yaml_indentifier not in string:
+                continue
+            pr_description = yaml.load(string.strip())
+            return pr_description['pull_requests']
+        return None
 
-  for s in pr_description_array:
-    if yaml_indentifier not in s:
-      continue
-    return s
-  return None
 
 def get_pull_requests_from_yaml(pr_yaml, current_pull_request):
-  """
-  Iterates through the list of pull requests in yaml and generates an
-  array of pull request objects
+    """
+    Iterates through the list of pull requests in yaml and generates an
+    array of pull request objects
 
-  Args:
-  pr_yaml (string): should be a string in yaml format
-  current_pull_request (object): Pull request object of current pull request
+    Args:
+    pr_yaml (string): should be a string in yaml format
+    current_pull_request (object): Pull request object of current pull request
 
-  Returns:
-  An array of pull request objects
-  """
-  pr_yaml = yaml.load(pr_yaml.strip())
-  pull_requests_objects = []
-  # Add current pull request values
-  pull_requests_objects.append(current_pull_request)
-  # Add pull request values from yaml
-  for pr in pr_yaml['pull_requests']:
-    pull_request_object = Pull_Request(pr)
-    pull_requests_objects.append(pull_request_object)
-  return pull_requests_objects
+    Returns:
+    An array of pull request objects
+    """
+    pr_yaml = yaml.load(pr_yaml.strip())
+    pull_requests_objects = []
+    # Add current pull request values
+    pull_requests_objects.append(current_pull_request)
+    # Add pull request values from yaml
+    for pull_request in pr_yaml['pull_requests']:
+        pull_request_object = Pull_Request(pull_request)
+        pull_requests_objects.append(pull_request_object)
+    return pull_requests_objects
 
 
-def generate_custom_values(pull_requests):
-  """
-  Generates custom values from an array of pull request objects
+def trigger_integration(args, pull_requests, current_pull_request):
+    """
+    Determines build parameters using an array of pull request urls and then
+    triggers an integration
 
-  Args:
-  pull_requests (array of objects): pull request objects
+    Args:
+    pull_requests (array of strings): array of urls
+    current_pull_request (object): pull request object
+    """
+    circle = circleci_trigger.CircleCI(args.repo, args.branch)
+    if pull_requests:
+        pull_requests.append(current_pull_request.url)
+        generate_build_parameters(circle, pull_requests)
+    else:
+        default_build_parameters(args, circle, current_pull_request)
+    print circle.build_param
+    circle.integration()
+    circle.status_pending()
 
-  Returns:
-  (string) A string formatted for custom values
-  """
-  custom_values = ''
-  for p in pull_requests:
-    custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(p.repo.replace('-','_'),p.repo,p.sha1)
-  # Remove trailing comma
-  if len(custom_values) > 0:
-    custom_values = custom_values[:-1]
-  return '{{ {} }}'.format(custom_values)
+
+def generate_build_parameters(circle, pull_requests):
+    """
+    Generates build parameters and adds them to the circle object
+
+    Args:
+    circle (object): object being modified
+    pull_requests (array of strings)
+    """
+    circle.build_param['PR_URL'] = pull_requests
+    custom_values = ''
+    status_urls = ''
+    for p in pull_requests:
+        pull_request = Pull_Request(p)
+        custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
+            pull_request.repo.replace('-', '_'),
+            pull_request.repo,
+            pull_request.sha1
+        )
+        status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
+            pull_request.owner,
+            pull_request.repo,
+            pull_request.sha1
+        )
+    # Remove trailing comma
+    if len(pull_requests) > 0:
+        custom_values = custom_values[:-1]
+        status_urls = status_urls[:-1]
+    circle.build_param['CUSTOM_VALUES'] = custom_values
+    circle.build_param['STATUS_URL'] = status_urls
+
+
+def default_build_parameters(args, circle, current_pull_request):
+    """
+    Adds default build parameters to the circle object
+
+    Args:
+    circle (object): object being modified
+    current_pull_request (object): pull request object
+    """
+    circle.build_param['PR_URL'] = current_pull_request.url
+    circle.build_param['CUSTOM_VALUES'] = '"{}": {{"repo": "{}","tag": "{}"}}'.format(
+        current_pull_request.repo.replace('-', '_'),
+        current_pull_request.repo,
+        current_pull_request.sha1
+    )
+    if args.KEY is not None:
+        if len(args.KEY) != len(args.VALUE):
+            raise Exception('each -K key must have matching -V')
+        else:
+            for i, val in enumerate(args.KEY):
+                circle.build_param[val[0]] = args.VALUE[i][0]
+
 
 def arg_parser():
-  p = argparse.ArgumentParser()
-  p.add_argument('-K', '--KEY', action='append', nargs=1)
-  p.add_argument('-V', '--VALUE', action='append', nargs=1)
-  p.add_argument('repo', type=str, help='github org/repo')
-  p.add_argument('branch', type=str, help='git branch to test')
-  return p.parse_args()
+    p = argparse.ArgumentParser()
+    p.add_argument('-K', '--KEY', action='append', nargs=1)
+    p.add_argument('-V', '--VALUE', action='append', nargs=1)
+    p.add_argument('repo', type=str, help='github org/repo')
+    p.add_argument('branch', type=str, help='git branch to test')
+    return p.parse_args()
+
 
 def main():
-  args = arg_parser()
-  pull_request_url = os.environ['CIRCLE_PULL_REQUEST']
-  c = circleci_trigger.CircleCI(args.repo,args.branch)
-  current_pull_request = Pull_Request(pull_request_url)
-  pr_yaml = get_pr_yaml('pull_requests:', current_pull_request.description, '```')
-  if pr_yaml:
-    print "YAML found, generating custom values."
-    pull_requests = get_pull_requests_from_yaml(pr_yaml,current_pull_request)
-    custom_values = generate_custom_values(pull_requests)
-
-    c.build_param['CUSTOM_VALUES'] = custom_values
-    status_urls = ''
-    pr_urls = []
-    for p in pull_requests:
-      status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
-        p.owner,
-        p.repo,
-        p.sha1
-      )
-      pr_urls.append(p.url)
-    # Remove trailing comma
-    if len(status_urls) > 0:
-      status_urls = status_urls[:-1]
-    c.build_param['STATUS_URL'] = status_urls
-    c.build_param['PR_URL'] = pr_urls
-    print c.build_param
-  else:
-    c.build_param['CUSTOM_VALUES'] = '"{}": {{"repo": "{}","tag": "{}"}}'.format(
-      current_pull_request.repo.replace('-','_'),
-      current_pull_request.repo,
-      current_pull_request.sha1
-    )
-    if len(args.KEY) != len(args.VALUE):
-      raise Exception('each -K key must have matching -V')
-    else:
-      for i, val in enumerate(args.KEY):
-        c.build_param[val[0]] = args.VALUE[i][0]
-
-  c.integration()
-  c.status_pending()
+    args = arg_parser()
+    pull_request_url = os.environ['CIRCLE_PULL_REQUEST']
+    current_pull_request = Pull_Request(pull_request_url)
+    urls = current_pull_request.get_description_urls('pull_requests:', '```')
+    trigger_integration(args, urls, current_pull_request)
 
 if __name__ == "__main__":
     main()
