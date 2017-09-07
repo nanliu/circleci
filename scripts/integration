@@ -55,29 +55,6 @@ class Pull_Request:
         return None
 
 
-def get_pull_requests_from_yaml(pr_yaml, current_pull_request):
-    """
-    Iterates through the list of pull requests in yaml and generates an
-    array of pull request objects
-
-    Args:
-    pr_yaml (string): should be a string in yaml format
-    current_pull_request (object): Pull request object of current pull request
-
-    Returns:
-    An array of pull request objects
-    """
-    pr_yaml = yaml.load(pr_yaml.strip())
-    pull_requests_objects = []
-    # Add current pull request values
-    pull_requests_objects.append(current_pull_request)
-    # Add pull request values from yaml
-    for pull_request in pr_yaml['pull_requests']:
-        pull_request_object = Pull_Request(pull_request)
-        pull_requests_objects.append(pull_request_object)
-    return pull_requests_objects
-
-
 def trigger_integration(args, pull_requests, current_pull_request):
     """
     Determines build parameters using an array of pull request urls and then
