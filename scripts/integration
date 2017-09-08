@@ -115,12 +115,13 @@ def default_build_parameters(args, circle, current_pull_request):
     circle (object): object being modified
     current_pull_request (object): pull request object
     """
-    circle.build_param['PR_URL'] = current_pull_request.url
-    circle.build_param['CUSTOM_VALUES'] = '"{}": {{"repo": "{}","tag": "{}"}}'.format(
-        current_pull_request.repo.replace('-', '_'),
-        current_pull_request.repo,
-        current_pull_request.sha1
-    )
+    if current_pull_request:
+        circle.build_param['PR_URL'] = current_pull_request.url
+        circle.build_param['CUSTOM_VALUES'] = '"{}": {{"repo": "{}","tag": "{}"}}'.format(
+            current_pull_request.repo.replace('-', '_'),
+            current_pull_request.repo,
+            current_pull_request.sha1
+        )
     if args.KEY is not None:
         if len(args.KEY) != len(args.VALUE):
             raise Exception('each -K key must have matching -V')
@@ -140,9 +141,12 @@ def arg_parser():
 
 def main():
     args = arg_parser()
-    pull_request_url = os.environ['CIRCLE_PULL_REQUEST']
-    current_pull_request = Pull_Request(pull_request_url)
-    urls = current_pull_request.get_description_urls('pull_requests:', '```')
+    urls = []
+    current_pull_request = None
+    pull_request_url = os.environ.get('CIRCLE_PULL_REQUEST')
+    if pull_request_url:
+        current_pull_request = Pull_Request(pull_request_url)
+        urls = current_pull_request.get_description_urls('pull_requests:', '```')
     trigger_integration(args, urls, current_pull_request)
 
 if __name__ == "__main__":
