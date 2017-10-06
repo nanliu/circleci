@@ -34,7 +34,7 @@ USER root
 ENV SHELL "/bin/bash"
 
 RUN apt-get update && apt-get install -y \
-    parallel jq \
+    parallel jq gettext\
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
