@@ -17,7 +17,8 @@ ARG GIT_TAG
 
 ARG KUBERNETES_VERSION="v1.6.4"
 ARG HELM_VERSION="v2.5.0"
-ARG TERRAFORM_VERSION="0.10.2"
+ARG TERRAFORM_VERSION="0.10.7"
+ARG PACKER_VERSION="1.1.1"
 # NOTE: Using my branch to fix quoting issue:
 ARG CIRCLE_CLI_VERSION="quote"
 ARG HUB_VERSION="2.3.0-pre10"
@@ -53,6 +54,10 @@ RUN curl -sfL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terr
     unzip /tmp/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
     cp terraform /usr/local/bin && \
     rm /tmp/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+RUN curl -sfL https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip -o /tmp/packer_${PACKER_VERSION}_linux_amd64.zip && \
+    unzip /tmp/packer_${PACKER_VERSION}_linux_amd64.zip && \
+    cp packer /usr/local/bin && \
+    rm /tmp/packer_${PACKER_VERSION}_linux_amd64.zip
 RUN curl -sfL https://raw.githubusercontent.com/nanliu/circleci-cli/${CIRCLE_CLI_VERSION}/src/circleci -o /usr/local/bin/circleci && \
     chmod 755 /usr/local/bin/circleci
 RUN curl -fL https://github.com/github/hub/releases/download/v${HUB_VERSION}/hub-linux-amd64-${HUB_VERSION}.tgz -o /tmp/hub-linux-amd64-${HUB_VERSION}.tgz && \
