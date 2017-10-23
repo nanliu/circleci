@@ -103,14 +103,23 @@ def generate_build_parameters(circle, pull_requests):
     """
     circle.build_param['PR_URL'] = pull_requests
     custom_values = ''
+    custom_images = ''
     status_urls = ''
     for p in pull_requests:
         pull_request = Pull_Request(p)
-        custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
-            pull_request.repo.replace('-', '_'),
-            pull_request.repo,
-            pull_request.sha1
-        )
+        # treat packers repos differently
+        if pull_request.repo.startswith('packer-'):
+            custom_images = custom_images + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
+                pull_request.repo.replace('-', '_'),
+                pull_request.repo,
+                pull_request.sha1
+            )
+        else:
+            custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
+                pull_request.repo.replace('-', '_'),
+                pull_request.repo,
+                pull_request.sha1
+            )
         status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
             pull_request.owner,
             pull_request.repo,
@@ -121,7 +130,9 @@ def generate_build_parameters(circle, pull_requests):
         custom_values = custom_values[:-1]
         status_urls = status_urls[:-1]
     custom_values = '{{ {} }}'.format(custom_values)
+    custom_images = '{{ {} }}'.format(custom_images)
     circle.build_param['CUSTOM_VALUES'] = custom_values
+    circle.build_param['CUSTOM_IMAGES'] = custom_images
     circle.build_param['STATUS_URL'] = status_urls
 
 
@@ -133,13 +144,22 @@ def default_build_parameters(args, circle, current_pull_request):
     circle (object): object being modified
     current_pull_request (object): pull request object
     """
+    custom_images = ''
+    custom_values = ''
     if current_pull_request:
         circle.build_param['PR_URL'] = current_pull_request.url
-        custom_values = '"{}": {{"repo": "{}","tag": "{}"}}'.format(
-            current_pull_request.repo.replace('-', '_'),
-            current_pull_request.repo,
-            current_pull_request.sha1
-        )
+        if current_pull_request.repo.startswith('packer-'):
+            custom_images = custom_images + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
+                current_pull_request.repo.replace('-', '_'),
+                current_pull_request.repo,
+                current_pull_request.sha1
+            )
+        else:
+            custom_values = '"{}": {{"repo": "{}","tag": "{}"}}'.format(
+                current_pull_request.repo.replace('-', '_'),
+                current_pull_request.repo,
+                current_pull_request.sha1
+            )
         circle.build_param['CUSTOM_VALUES'] = '{{ {} }}'.format(custom_values)
     if args.KEY is not None:
         if len(args.KEY) != len(args.VALUE):
