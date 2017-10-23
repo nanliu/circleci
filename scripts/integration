@@ -161,6 +161,7 @@ def default_build_parameters(args, circle, current_pull_request):
                 current_pull_request.sha1
             )
         circle.build_param['CUSTOM_VALUES'] = '{{ {} }}'.format(custom_values)
+        circle.build_param['CUSTOM_IMAGES'] = '{{ {} }}'.format(custom_images)
     if args.KEY is not None:
         if len(args.KEY) != len(args.VALUE):
             raise Exception('each -K key must have matching -V')
