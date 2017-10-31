@@ -72,8 +72,6 @@ RUN curl -sSLo google-cloud-sdk.tar.gz https://dl.google.com/dl/cloudsdk/release
 
 RUN pip install pyyaml requests
 
-USER circleci
-
 RUN mkdir -p "$(helm home)/plugins" && \
     helm plugin install https://github.com/databus23/helm-diff
 
