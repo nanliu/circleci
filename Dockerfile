@@ -35,7 +35,7 @@ USER root
 ENV SHELL "/bin/bash"
 
 RUN apt-get update && apt-get install -y \
-    parallel jq gettext\
+    parallel jq gettext cron \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -71,8 +71,6 @@ RUN curl -sSLo google-cloud-sdk.tar.gz https://dl.google.com/dl/cloudsdk/release
     && ln -s /google-cloud-sdk/bin/gcloud /usr/local/bin/
 
 RUN pip install pyyaml requests
-
-USER circleci
 
 RUN mkdir -p "$(helm home)/plugins" && \
     helm plugin install https://github.com/databus23/helm-diff
