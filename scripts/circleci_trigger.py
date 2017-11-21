@@ -1,8 +1,7 @@
 import argparse
-import base64
 import json
 import os
-import requests
+from circleci_base import CircleCIBase
 import gh_status
 
 
@@ -13,29 +12,19 @@ class CircleCI():
             os.environ.get('CIRCLE_PROJECT_REPONAME'),
             os.environ.get('CIRCLE_SHA1')
         )
-
         self.build_param = {
             'PR_URL': os.environ.get('CIRCLE_PULL_REQUESTS'),
             'STATUS_URL': status_url,
         }
-
-        token = os.environ.get('CIRCLE_TOKEN')
-        self._auth = base64.standard_b64encode('{}:'.format(token))
-
-        # NOTE: https://circleci.com/docs/api/v1-reference/#new-build-branch
-        self._url = 'https://circleci.com/api/v1.1/project/github/{}/tree/{}'.\
-            format(repo, branch)
+        self.circleci = CircleCIBase()
+        self.repo = repo
+        self.branch = branch
 
     def integration(self):
         data = json.dumps({'build_parameters': self.build_param})
-        headers = {
-            'Authorization': 'Basic {}'.format(self._auth),
-            'Content-Type': 'application/json'
-        }
-        result = requests.post(self._url, data=data, headers=headers)
-        self._build_num = result.json()['build_num']
-        self._build_url = result.json()['build_url']
-        print result.text
+        result = self.circleci.trigger_build(self.repo, self.branch, data)
+        self._build_num = result['build_num']
+        self._build_url = result['build_url']
 
     def status_pending(self):
         if self._build_url is None:
