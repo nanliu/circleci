@@ -1,1 +1,4 @@
 pkg
+*pyc
+*swp
+.cache
