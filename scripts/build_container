@@ -21,12 +21,14 @@ fi
 MUNGED_BRANCH=$(echo "$CIRCLE_BRANCH" | tr '/' '_')
 
 if [[ -n "${QUAY_USER:-}" ]]; then
-  echo "pushing container to quay.io"
-  docker login -u "${QUAY_USER}" -p "${QUAY_PASS}" quay.io
-  docker tag "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}"
-  docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" || echo "${CIRCLE_SHA1} push to quay.io failed"
+  # echo "pushing container to quay.io"
+  # docker login -u "${QUAY_USER}" -p "${QUAY_PASS}" quay.io
+  # docker tag "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}"
+  # docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" || echo "${CIRCLE_SHA1} push to quay.io failed"
 
   if [[ -n "${CIRCLE_TAG:-}" ]]; then
+    echo "pushing container to quay.io"
+    docker login -u "${QUAY_USER}" -p "${QUAY_PASS}" quay.io
     docker tag "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
     docker push "quay.io/${QUAY_REPO}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}" || echo "${CIRCLE_TAG} push to quay.io failed"
   else
