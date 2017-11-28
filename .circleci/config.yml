@@ -9,6 +9,11 @@ jobs:
       - setup_remote_docker:
           version: 17.06.0-ce
       - run:
+          name: unit test
+          command: |
+            sudo pip install pytest mock pyyaml requests
+            python -m pytest scripts/test*py
+      - run:
           name: docker build
           command: |
             MUNGED_BRANCH=$(echo $CIRCLE_BRANCH | tr '/' '_')
