@@ -37,12 +37,12 @@ class Pull_Request:
         self.number = pull_request['number']
         self.owner = pull_request['head']['repo']['owner']['login']
 
-    def get_description_urls(self, yaml_indentifier, delimiter):
+    def get_description_section(self, yaml_section, delimiter):
         """
         Gets yaml in the pull request description. Otherwise returns None.
 
         Args:
-        yaml_identifier (string): string used to search for yaml block
+        yaml_section (string): string used to search for yaml block
         pr_description (string): Pull request description
         delimeter (string): determines how to split pull request description
 
@@ -53,11 +53,12 @@ class Pull_Request:
             return None
         description_array = self.description.split(delimiter)
 
+        yaml_indentifier = '{}:'.format(yaml_section)
         for string in description_array:
             if yaml_indentifier not in string:
                 continue
             pr_description = yaml.load(string.strip())
-            return pr_description['pull_requests']
+            return pr_description[yaml_section]
         return None
 
 def validate_url(url, regex):
@@ -73,16 +74,42 @@ def validate_url(url, regex):
         print 'Invalid url: ' + url
         exit(1)
 
-def trigger_integration(args, pull_requests, current_pull_request):
+
+def validate_integration_branch(repo, integration_branch):
+    """
+    Will validate that the given integration branch exists
+
+    Args:
+    repo (string): github repo of the branch
+    integration_branch (string)
+    """
+    github_token = os.environ['GH_OAUTH_TOKEN']
+    auth_headers = {'Authorization': 'token {}'.format(github_token)}
+    branch_url = 'https://api.github.com/repos/{}/branches/{}'.format(repo, integration_branch)
+    branch = requests.get(branch_url, headers=auth_headers).json()
+    try:
+        print "Found branch {}".format(branch['name'])
+    except:
+        print "ERROR: Integration branch not found. Does it exist?"
+        exit(1)
+
+
+def trigger_integration(args, pull_requests, current_pull_request, integration_branch=None):
     """
     Determines build parameters using an array of pull request urls and then
     triggers an integration
 
     Args:
+    integration_branch (string): branch to use for integration
     pull_requests (array of strings): array of urls
     current_pull_request (object): pull request object
     """
-    circle = circleci_trigger.CircleCI(args.repo, args.branch)
+    if integration_branch:
+        circle = circleci_trigger.CircleCI(args.repo, integration_branch)
+    else:
+        circle = circleci_trigger.CircleCI(args.repo, args.branch)
+    validate_integration_branch(circle.repo, circle.branch)
+
     if pull_requests:
         pull_requests.append(current_pull_request.url)
         generate_build_parameters(circle, pull_requests)
@@ -165,8 +192,9 @@ def main():
     pull_request_url = os.environ.get('CIRCLE_PULL_REQUEST')
     if pull_request_url:
         current_pull_request = Pull_Request(pull_request_url)
-        urls = current_pull_request.get_description_urls('pull_requests:', '```')
-    trigger_integration(args, urls, current_pull_request)
+        urls = current_pull_request.get_description_section('pull_requests', '```')
+        integration_branch = current_pull_request.get_description_section('integration_branch', '```')
+    trigger_integration(args, urls, current_pull_request, integration_branch)
 
 if __name__ == "__main__":
     main()
