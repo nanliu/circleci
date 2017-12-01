@@ -111,12 +111,11 @@ def trigger_integration(args, pull_requests, current_pull_request, integration_b
         branch_sha
     )
 
-    if pull_requests or (circle.branch != 'master'):
-        if pull_requests:
-            pull_requests.append(current_pull_request.url)
+    if pull_requests:
+        pull_requests.append(current_pull_request.url)
         generate_build_parameters(circle, pull_requests, branch_status_url)
     else:
-        default_build_parameters(args, circle, current_pull_request)
+        default_build_parameters(args, circle, current_pull_request, branch_status_url)
     print circle.build_param
     circle.integration()
     circle.status_pending()
@@ -133,19 +132,18 @@ def generate_build_parameters(circle, pull_requests, branch_status_url):
     circle.build_param['PR_URL'] = pull_requests
     custom_values = ''
     status_urls = ''
-    if pull_requests:
-        for p in pull_requests:
-            pull_request = Pull_Request(p)
-            custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
-                pull_request.repo.replace('-', '_'),
-                pull_request.repo,
-                pull_request.sha1
-            )
-            status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
-                pull_request.owner,
-                pull_request.repo,
-                pull_request.sha1
-            )
+    for p in pull_requests:
+        pull_request = Pull_Request(p)
+        custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
+            pull_request.repo.replace('-', '_'),
+            pull_request.repo,
+            pull_request.sha1
+        )
+        status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
+            pull_request.owner,
+            pull_request.repo,
+            pull_request.sha1
+        )
     if branch_status_url and (circle.branch != 'master'):
         status_urls = branch_status_url + ',' + status_urls
     # Remove trailing comma
@@ -158,7 +156,7 @@ def generate_build_parameters(circle, pull_requests, branch_status_url):
     circle.build_param['STATUS_URL'] = status_urls
 
 
-def default_build_parameters(args, circle, current_pull_request):
+def default_build_parameters(args, circle, current_pull_request, branch_status_url):
     """
     Adds default build parameters to the circle object
 
@@ -174,6 +172,8 @@ def default_build_parameters(args, circle, current_pull_request):
             current_pull_request.sha1
         )
         circle.build_param['CUSTOM_VALUES'] = '{{ {} }}'.format(custom_values)
+    if branch_status_url and (circle.branch != 'master'):
+        circle.build_param['STATUS_URL'] = branch_status_url
     if args.KEY is not None:
         if len(args.KEY) != len(args.VALUE):
             raise Exception('each -K key must have matching -V')
