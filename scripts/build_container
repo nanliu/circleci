@@ -20,7 +20,7 @@ docker_login() {
 docker_build() {
   if [[ -n "${PIPBOT_PEM:-}" ]]; then
     echo "building container with secret bootstrap"
-    docker build . \
+    gcloud docker -- build . \
       -t "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" \
       --build-arg PIPBOT_PEM="${PIPBOT_PEM}" \
       --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
@@ -28,7 +28,7 @@ docker_build() {
       --build-arg GIT_TAG="${CIRCLE_TAG:-}"
   else
     echo "building container without secrets"
-    docker build . \
+    gcloud docker -- build . \
       -t "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" \
       --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
       --build-arg GIT_SHA1="${CIRCLE_SHA1}" \
