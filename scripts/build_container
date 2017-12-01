@@ -55,9 +55,6 @@ docker_push() {
 
   if [[ -n "${GOOGLE_AUTH:-}" ]]; then
     echo "pushing container to gcr.io"
-    echo "${GOOGLE_AUTH}" | base64 -d > /tmp/gcp-key.json
-    gcloud auth activate-service-account --key-file /tmp/gcp-key.json
-    gcloud config set project "${GOOGLE_PROJECT_ID}"
     docker tag "${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" "gcr.io/${GOOGLE_PROJECT_ID}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}"
     gcloud docker -- push "gcr.io/${GOOGLE_PROJECT_ID}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}"
  
