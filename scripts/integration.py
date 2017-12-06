@@ -88,7 +88,7 @@ def validate_integration_branch(repo, integration_branch):
         print "Found branch {}".format(branch['name'])
         return branch['commit']['sha']
     except:
-        raise Exception("ERROR: Integration branch not found. Does it exist?")       
+        raise Exception("ERROR: Integration branch not found. Does it exist?")
 
 
 def trigger_integration(args, pull_requests, current_pull_request, integration_branch=None):
@@ -195,6 +195,7 @@ def cli():
     args = arg_parser()
     urls = []
     current_pull_request = None
+    integration_branch = None
     pull_request_url = os.environ.get('CIRCLE_PULL_REQUEST')
     if pull_request_url:
         current_pull_request = Pull_Request(pull_request_url)
