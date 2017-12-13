@@ -34,6 +34,8 @@ class Pull_Request:
         self.repo = pull_request['head']['repo']['name']
         self.sha1 = pull_request['head']['sha']
         self.owner = pull_request['head']['repo']['owner']['login']
+        self.repo_full_name = pull_request['head']['repo']['full_name']
+
 
     def get_description_section(self, yaml_section, delimiter):
         """
@@ -72,25 +74,6 @@ def validate_url(url, regex):
         raise ValueError('ERROR: Invalid url: ' + url)
 
 
-def validate_integration_branch(repo, integration_branch):
-    """
-    Will validate that the given integration branch exists
-
-    Args:
-    repo (string): github repo of the branch
-    integration_branch (string)
-    """
-    github_token = os.environ['GH_OAUTH_TOKEN']
-    auth_headers = {'Authorization': 'token {}'.format(github_token)}
-    branch_url = 'https://api.github.com/repos/{}/branches/{}'.format(repo, integration_branch)
-    branch = requests.get(branch_url, headers=auth_headers).json()
-    try:
-        print "Found branch {}".format(branch['name'])
-        return branch['commit']['sha']
-    except:
-        raise Exception("ERROR: Integration branch not found. Does it exist?")
-
-
 def trigger_integration(args, pull_requests, current_pull_request, integration_branch=None):
     """
     Determines build parameters using an array of pull request urls and then
@@ -101,27 +84,20 @@ def trigger_integration(args, pull_requests, current_pull_request, integration_b
     pull_requests (array of strings): array of urls
     current_pull_request (object): pull request object
     """
-    if integration_branch:
-        circle = circleci_trigger.CircleCI(args.repo, integration_branch)
-    else:
-        circle = circleci_trigger.CircleCI(args.repo, args.branch)
-    branch_sha = validate_integration_branch(circle.repo, circle.branch)
-    branch_status_url = 'https://api.github.com/repos/{}/statuses/{}'.format(
-        circle.repo,
-        branch_sha
-    )
+    circle = circleci_trigger.CircleCI(args.repo, args.branch)
 
     if pull_requests:
         pull_requests.append(current_pull_request.url)
-        generate_build_parameters(circle, pull_requests, branch_status_url)
+        generate_build_parameters(circle, pull_requests)
     else:
-        default_build_parameters(args, circle, current_pull_request, branch_status_url)
+        default_build_parameters(args, circle, current_pull_request)
     print circle.build_param
+    print 'Targeting integration branch {}'.format(circle.branch)
     circle.integration()
     circle.status_pending()
 
 
-def generate_build_parameters(circle, pull_requests, branch_status_url):
+def generate_build_parameters(circle, pull_requests):
     """
     Generates build parameters and adds them to the circle object
 
@@ -134,29 +110,29 @@ def generate_build_parameters(circle, pull_requests, branch_status_url):
     status_urls = ''
     for p in pull_requests:
         pull_request = Pull_Request(p)
-        custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
-            pull_request.repo.replace('-', '_'),
-            pull_request.repo,
-            pull_request.sha1
-        )
-        status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
-            pull_request.owner,
-            pull_request.repo,
-            pull_request.sha1
-        )
-    if branch_status_url and (circle.branch != 'master'):
-        status_urls = branch_status_url + ',' + status_urls
+        if pull_request.repo_full_name.lower() != circle.repo.lower():
+            custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
+                pull_request.repo.replace('-', '_'),
+                pull_request.repo,
+                pull_request.sha1
+            )
+            status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
+                pull_request.owner,
+                pull_request.repo,
+                pull_request.sha1
+            )
     # Remove trailing comma
     if len(custom_values) > 0:
         custom_values = custom_values[:-1]
     if len(status_urls) > 0:
         status_urls = status_urls[:-1]
-    custom_values = '{{ {} }}'.format(custom_values)
+    if custom_values:
+        custom_values = '{{ {} }}'.format(custom_values)
     circle.build_param['CUSTOM_VALUES'] = custom_values
     circle.build_param['STATUS_URL'] = status_urls
 
 
-def default_build_parameters(args, circle, current_pull_request, branch_status_url):
+def default_build_parameters(args, circle, current_pull_request):
     """
     Adds default build parameters to the circle object
 
@@ -172,8 +148,6 @@ def default_build_parameters(args, circle, current_pull_request, branch_status_u
             current_pull_request.sha1
         )
         circle.build_param['CUSTOM_VALUES'] = '{{ {} }}'.format(custom_values)
-    if branch_status_url and (circle.branch != 'master'):
-        circle.build_param['STATUS_URL'] = branch_status_url
     if args.KEY is not None:
         if len(args.KEY) != len(args.VALUE):
             raise Exception('each -K key must have matching -V')
@@ -200,5 +174,4 @@ def cli():
     if pull_request_url:
         current_pull_request = Pull_Request(pull_request_url)
         urls = current_pull_request.get_description_section('pull_requests', '```')
-        integration_branch = current_pull_request.get_description_section('integration_branch', '```')
-    trigger_integration(args, urls, current_pull_request, integration_branch)
+    trigger_integration(args, urls, current_pull_request)
