@@ -3,7 +3,7 @@ import json
 import logging
 import subprocess
 import re
-from circleci_base import CircleCIBase
+from circleci.base import CircleCIBase
 
 
 class NamespaceGC():

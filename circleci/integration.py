@@ -15,18 +15,23 @@ import re
 import requests
 import yaml
 
-import circleci_trigger
+import circleci.trigger
 
 
 class Pull_Request:
     def __init__(self, url):
         self.url = url
         validate_url(url, '^https?:\/\/github.com\/.*\/pull\/\d+\/?$')
-        #Remove trailing slash
+        # Remove trailing slash
         if url[-1] == '/':
             url = url[:-1]
-        api_pr_url = (url.replace("https://github.com", "https://api.github.com/repos", 1)
-                     ).replace("pull", "pulls")
+        api_pr_url = (
+            url.replace(
+                "https://github.com",
+                "https://api.github.com/repos",
+                1
+            )
+        ).replace("pull", "pulls")
         github_token = os.environ['GH_OAUTH_TOKEN']
         auth_headers = {'Authorization': 'token {}'.format(github_token)}
         pull_request = requests.get(api_pr_url, headers=auth_headers).json()
@@ -61,6 +66,7 @@ class Pull_Request:
             pr_description = yaml.load(string.strip())
             return pr_description[yaml_section]
         return None
+
 
 def validate_url(url, regex):
     """

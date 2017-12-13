@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-from circleci_base import CircleCIBase
+from circleci.base import CircleCIBase
 import gh_status
 
 

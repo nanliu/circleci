@@ -28,9 +28,16 @@ class CircleCIBase():
         return resp.json()
 
     # get running builds
-    def get_build_status(self, repo, filter='running'):
-        url = '{}/{}?filter={}'.\
-            format(self.github_url, repo, filter)
+    def get_build_status(self, repo, branch=None, filter='running', limit=30):
+        if branch is not None:
+            repo = "{}/tree/{}".format(repo, branch)
+        url = '{}/{}?filter={}&limit={}'.\
+            format(self.github_url, repo, filter, limit)
+        return self.get(url)
+
+    def get_single_build_status(self, repo, build_num):
+        url = '{}/{}/{}'.\
+            format(self.github_url, repo, build_num)
         return self.get(url)
 
     # trigger a new build in circleci

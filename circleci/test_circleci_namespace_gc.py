@@ -2,7 +2,7 @@ import os
 import subprocess
 import unittest
 from mock import MagicMock, patch
-from circleci_namespace_gc import NamespaceGC
+from circleci.namespace_gc import NamespaceGC
 
 
 def subprocess_side_effect(arg):

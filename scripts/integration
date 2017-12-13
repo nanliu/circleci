@@ -1,4 +1,0 @@
-#!/usr/bin/env python
-import integration
-
-integration.cli()
