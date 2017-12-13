@@ -21,6 +21,7 @@ class TestIntegration(unittest.TestCase):
 	"body": "```\r\npull_requests:\r\n  - https://github.com/octocat/Hello-world/pull/123\r\n```",
 	"head": {
 		"sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+		"ref": "branch-name",
 		"repo": {
 			"owner": {
 				"login": "octocat"
@@ -78,3 +79,4 @@ class TestIntegration(unittest.TestCase):
              'CUSTOM_VALUES': '',
              'STATUS_URL': ''}
         )
+        self.assertEqual(circle_master.branch,'branch-name')

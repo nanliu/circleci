@@ -35,6 +35,7 @@ class Pull_Request:
         self.sha1 = pull_request['head']['sha']
         self.owner = pull_request['head']['repo']['owner']['login']
         self.repo_full_name = pull_request['head']['repo']['full_name']
+        self.branch = pull_request['head']['ref']
 
 
     def get_description_section(self, yaml_section, delimiter):
@@ -121,6 +122,8 @@ def generate_build_parameters(circle, pull_requests):
                 pull_request.repo,
                 pull_request.sha1
             )
+        else:
+            circle.branch = pull_request.branch
     # Remove trailing comma
     if len(custom_values) > 0:
         custom_values = custom_values[:-1]
