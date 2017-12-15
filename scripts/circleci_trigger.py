@@ -26,17 +26,19 @@ class CircleCI():
         self._build_num = result['build_num']
         self._build_url = result['build_url']
 
-    def status_pending(self):
+    def status_pending(self, context):
         if self._build_url is None:
             raise Exception('No build has been triggered.')
         msg = 'The integration build {} started'.format(self._build_num)
 
         for url in self.build_param['STATUS_URL'].split(','):
-            gh_status.update(url, 'pending', self._build_url, msg)
+            gh_status.update(url, context, 'pending', self._build_url, msg)
 
 
 def arg_parser():
     p = argparse.ArgumentParser()
+    p.add_argument('-c', '--context', default='ci/cirleci-integration',
+                   help='git sha context message')
     p.add_argument('-K', '--KEY', action='append', nargs=1)
     p.add_argument('-V', '--VALUE', action='append', nargs=1)
     p.add_argument('repo', type=str, help='github org/repo')
@@ -56,4 +58,4 @@ def cli():
             circle.build_param[val[0]] = args.VALUE[i][0]
 
     circle.integration()
-    circle.status_pending()
+    circle.status_pending(args.context)
