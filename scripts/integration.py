@@ -102,7 +102,7 @@ def trigger_integration(args, pull_requests, current_pull_request, integration_b
     current_pull_request (object): pull request object
     """
     if integration_branch:
-        circle = circleci_trigger.CircleCI(args.repo, integration_branch)
+        circle = circleci_trigger.CircleCI(args.repo, integration_branch, args.context)
     else:
         circle = circleci_trigger.CircleCI(args.repo, args.branch)
     branch_sha = validate_integration_branch(circle.repo, circle.branch)
@@ -184,6 +184,8 @@ def default_build_parameters(args, circle, current_pull_request, branch_status_u
 
 def arg_parser():
     p = argparse.ArgumentParser()
+    p.add_argument('-c', '--context', default='ci/cirleci-integration',
+                   help='git sha context message')
     p.add_argument('-K', '--KEY', action='append', nargs=1)
     p.add_argument('-V', '--VALUE', action='append', nargs=1)
     p.add_argument('repo', type=str, help='github org/repo')
