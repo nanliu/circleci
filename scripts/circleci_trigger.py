@@ -6,7 +6,7 @@ import gh_status
 
 
 class CircleCI():
-    def __init__(self, repo, branch):
+    def __init__(self, repo, branch, context='ci/circleci-integration'):
         status_url = 'https://api.github.com/repos/{}/{}/statuses/{}'.format(
             os.environ.get('CIRCLE_PROJECT_USERNAME'),
             os.environ.get('CIRCLE_PROJECT_REPONAME'),
@@ -19,6 +19,7 @@ class CircleCI():
         self.circleci = CircleCIBase()
         self.repo = repo
         self.branch = branch
+        self.context = context
 
     def integration(self):
         data = json.dumps({'build_parameters': self.build_param})
@@ -32,11 +33,13 @@ class CircleCI():
         msg = 'The integration build {} started'.format(self._build_num)
 
         for url in self.build_param['STATUS_URL'].split(','):
-            gh_status.update(url, 'pending', self._build_url, msg)
+            gh_status.update(url, self.context, 'pending', self._build_url, msg)
 
 
 def arg_parser():
     p = argparse.ArgumentParser()
+    p.add_argument('-c', '--context', default='ci/cirleci-integration',
+                   help='git sha context message')
     p.add_argument('-K', '--KEY', action='append', nargs=1)
     p.add_argument('-V', '--VALUE', action='append', nargs=1)
     p.add_argument('repo', type=str, help='github org/repo')
@@ -47,7 +50,7 @@ def arg_parser():
 def cli():
     args = arg_parser()
 
-    circle = CircleCI(args.repo, args.branch)
+    circle = CircleCI(args.repo, args.branch, args.context)
 
     if len(args.KEY) != len(args.VALUE):
         raise Exception('each -K key must have matching -V')
