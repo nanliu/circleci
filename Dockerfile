@@ -19,6 +19,7 @@ ARG KUBERNETES_VERSION="v1.6.4"
 ARG HELM_VERSION="v2.5.1"
 ARG TERRAFORM_VERSION="0.11.1"
 ARG PACKER_VERSION="1.1.3"
+ARG GCLOUD_SDK_VERSION="183.0.0"
 # NOTE: Using my branch to fix quoting issue:
 ARG CIRCLE_CLI_VERSION="quote"
 ARG HUB_VERSION="2.3.0-pre10"
@@ -64,10 +65,10 @@ RUN curl -fL https://github.com/github/hub/releases/download/v${HUB_VERSION}/hub
     tar xzf /tmp/hub-linux-amd64-${HUB_VERSION}.tgz && \
     mv hub-linux-amd64-${HUB_VERSION}/bin/hub /usr/local/bin && \
     rm /tmp/hub-linux-amd64-${HUB_VERSION}.tgz && rm -r hub-linux-amd64-${HUB_VERSION}
-RUN curl -sSLo google-cloud-sdk.tar.gz https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz \
-    && tar zxvf google-cloud-sdk.tar.gz \
+RUN curl -sSLo google-cloud-sdk.tar.gz https://storage.googleapis.com/cloud-sdk-release/google-cloud-sdk-${GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
+    && tar zxf google-cloud-sdk.tar.gz \
     && rm google-cloud-sdk.tar.gz \
-    && ./google-cloud-sdk/install.sh --usage-reporting=true --path-update=tru \
+    && ./google-cloud-sdk/install.sh --usage-reporting=true --path-update=true \
     && ln -s /google-cloud-sdk/bin/gcloud /usr/local/bin/
 
 RUN pip install pyyaml requests
