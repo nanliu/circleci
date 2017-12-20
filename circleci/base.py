@@ -25,7 +25,10 @@ class CircleCIBase():
             'Content-Type': 'application/json'
         }
         resp = requests.get(url, headers=headers)
-        return resp.json()
+        if resp.status_code == 200:
+            return resp.json()
+        else:
+            print resp.text
 
     # get running builds
     def get_build_status(self, repo, branch=None, filter='running', limit=30):

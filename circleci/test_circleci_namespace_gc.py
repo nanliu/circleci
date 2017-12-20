@@ -65,6 +65,8 @@ h-celery-circleci-4710
         )
 
     class CircleCIGetMock():
+        def __init__(self):
+            self.status_code=200
         def json(self):
             return [{'build_num': '123'},
                     {'build_num': '4701'}]
