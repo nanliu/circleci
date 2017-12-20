@@ -25,6 +25,7 @@ class CircleCI():
         result = self.circleci.trigger_build(self.repo, self.branch, data)
         self._build_num = result['build_num']
         self._build_url = result['build_url']
+        print "Build Number:{}".format(self._build_num)
 
     def status_pending(self):
         if self._build_url is None:

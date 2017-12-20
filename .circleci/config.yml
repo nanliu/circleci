@@ -15,6 +15,12 @@ jobs:
             sudo pip install -U .
             sudo py.test circleci/test*.py
       - run:
+          name: int test
+          command: |
+            sudo pip install pytest setuptools pyyaml
+            sudo pip install -U .
+            sudo py.test integration/test*.py
+      - run:
           name: docker build
           command: |
             MUNGED_BRANCH=$(echo $CIRCLE_BRANCH | tr '/' '_')

@@ -91,7 +91,7 @@ def trigger_integration(args, pull_requests, current_pull_request, integration_b
     pull_requests (array of strings): array of urls
     current_pull_request (object): pull request object
     """
-    circle = circleci_trigger.CircleCI(args.repo, args.branch)
+    circle = circleci.trigger.CircleCI(args.repo, args.branch)
 
     if pull_requests:
         pull_requests.append(current_pull_request.url)
