@@ -7,7 +7,7 @@ class CircleCIBase():
     def __init__(self):
         token = os.environ.get('CIRCLE_TOKEN')
         if token is None:
-            raise("Must set env var CIRCLE_TOKEN")
+            raise Exception("Must set env var CIRCLE_TOKEN")
         self._auth = base64.standard_b64encode('{}:'.format(token))
         self.github_url = 'https://circleci.com/api/v1.1/project/github'
 
