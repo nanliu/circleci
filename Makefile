@@ -7,3 +7,6 @@ install:
 
 test: install
 	@. $(ACTIVATE); py.test circleci/test*py
+
+inttest: install
+	@. $(ACTIVATE); py.test integration/test*py
