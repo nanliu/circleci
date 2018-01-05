@@ -39,12 +39,8 @@ jobs:
 
             curl -X POST https://hooks.microbadger.com/images/nanliu/circleci/g05525pyv2nt05fU5l8ZabGZyGE=
       - run:
-          name: int test
+          name: integration tests
           command: |
-            # use remote docker instance
-            #export DOCKER_TLS_VERIFY=1
-            #export DOCKER_HOST=tcp://35.196.188.248:2376
-            #export DOCKER_CERT_PATH=/tmp/docker-certs485170305
             docker run \
               --env GKE_KUBECONFIG_DEVOPS \
               --env CIRCLE_TOKEN \
@@ -54,11 +50,10 @@ jobs:
               --env TEST_REPO \
               "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" \
               /bin/bash -ce " \
-                mkdir $HOME/.kube/;
-                echo $GKE_KUBECONFIG_DEVOPS | base64 --decode > $HOME/.kube/config;
-                echo $GOOGLE_AUTH | base64 -d > /tmp/gcp-key.json;
-                gcloud auth activate-service-account --key-file /tmp/gcp-key.json;
-                gcloud config set project $GOOGLE_PROJECT_ID;
-                sudo pip install pytest;
-                sudo -E py.test integration/test*.py
-              "
+                mkdir $HOME/.kube/
+                echo $GKE_KUBECONFIG_DEVOPS | base64 --decode > $HOME/.kube/config
+                echo $GOOGLE_AUTH | base64 -d > /tmp/gcp-key.json
+                gcloud auth activate-service-account --key-file /tmp/gcp-key.json
+                gcloud config set project $GOOGLE_PROJECT_ID
+                sudo pip install pytest
+                sudo -E py.test integration/test*.py"
