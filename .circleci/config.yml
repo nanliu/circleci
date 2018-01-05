@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: nanliu/circleci:master
+      - image: circleci/python:2.7
     working_directory: ~/circleci
     steps:
       - checkout
@@ -14,17 +14,6 @@ jobs:
             sudo pip install pytest mock setuptools pyyaml
             sudo pip install -U .
             sudo py.test circleci/test*.py
-      - run:
-          name: int test
-          command: |
-            mkdir "${HOME}/.kube/"
-            echo "${GKE_KUBECONFIG_DEVOPS}" | base64 --decode > "${HOME}/.kube/config"
-            echo "${GOOGLE_AUTH}" | base64 -d > /tmp/gcp-key.json
-            gcloud auth activate-service-account --key-file /tmp/gcp-key.json
-            gcloud config set project "$GOOGLE_PROJECT_ID"
-            sudo pip install pytest setuptools pyyaml
-            sudo pip install -U .
-            sudo -E py.test integration/test*.py
       - run:
           name: docker build
           command: |
@@ -49,3 +38,27 @@ jobs:
             fi
 
             curl -X POST https://hooks.microbadger.com/images/nanliu/circleci/g05525pyv2nt05fU5l8ZabGZyGE=
+      - run:
+          name: int test
+          command: |
+            # use remote docker instance
+            export DOCKER_TLS_VERIFY=1
+            export DOCKER_HOST=tcp://35.196.188.248:2376
+            export DOCKER_CERT_PATH=/tmp/docker-certs485170305
+            docker run \
+              --env GKE_KUBECONFIG_DEVOPS \
+              --env CIRCLE_TOKEN \
+              --env GH_OAUTH_TOKEN \
+              --env GOOGLE_AUTH \
+              --env GOOGLE_PROJECT_ID \
+              --env TEST_REPO \
+              "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" \
+              /bin/bash -ce " \
+                mkdir $HOME/.kube/;
+                echo $GKE_KUBECONFIG_DEVOPS | base64 --decode > $HOME/.kube/config;
+                echo $GOOGLE_AUTH | base64 -d > /tmp/gcp-key.json;
+                gcloud auth activate-service-account --key-file /tmp/gcp-key.json;
+                gcloud config set project $GOOGLE_PROJECT_ID;
+                sudo pip install pytest;
+                sudo -E py.test integration/test*.py
+              "
