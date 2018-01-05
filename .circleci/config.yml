@@ -21,6 +21,7 @@ jobs:
             echo "${GKE_KUBECONFIG_DEVOPS}" | base64 --decode > "${HOME}/.kube/config"
             echo "${GOOGLE_AUTH}" | base64 -d > /tmp/gcp-key.json
             gcloud auth activate-service-account --key-file /tmp/gcp-key.json
+            gcloud config set project "$GOOGLE_PROJECT_ID"
             sudo pip install pytest setuptools pyyaml
             sudo pip install -U .
             sudo -E py.test integration/test*.py
