@@ -17,6 +17,8 @@ jobs:
       - run:
           name: int test
           command: |
+            mkdir "${HOME}/.kube/"
+            echo "${GKE_KUBECONFIG_DEVOPS}" | base64 --decode > "${HOME}/.kube/config"
             sudo pip install pytest setuptools pyyaml
             sudo pip install -U .
             sudo py.test integration/test*.py
