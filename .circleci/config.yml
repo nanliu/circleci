@@ -42,9 +42,9 @@ jobs:
           name: int test
           command: |
             # use remote docker instance
-            export DOCKER_TLS_VERIFY=1
-            export DOCKER_HOST=tcp://35.196.188.248:2376
-            export DOCKER_CERT_PATH=/tmp/docker-certs485170305
+            #export DOCKER_TLS_VERIFY=1
+            #export DOCKER_HOST=tcp://35.196.188.248:2376
+            #export DOCKER_CERT_PATH=/tmp/docker-certs485170305
             docker run \
               --env GKE_KUBECONFIG_DEVOPS \
               --env CIRCLE_TOKEN \
