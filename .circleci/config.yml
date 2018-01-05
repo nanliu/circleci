@@ -21,7 +21,7 @@ jobs:
             echo "${GKE_KUBECONFIG_DEVOPS}" | base64 --decode > "${HOME}/.kube/config"
             sudo pip install pytest setuptools pyyaml
             sudo pip install -U .
-            sudo py.test integration/test*.py
+            sudo -E py.test integration/test*.py
       - run:
           name: docker build
           command: |
