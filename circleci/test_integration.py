@@ -1,15 +1,15 @@
 import os
-import subprocess
 import unittest
 import json
-from mock import MagicMock, patch
+from mock import patch
 
-from circleci_namespace_gc import NamespaceGC
-from circleci_trigger import CircleCI
+from circleci.trigger import CircleCI
 import integration
+
 
 class TestIntegration(unittest.TestCase):
     maxDiff = None
+
     def setUp(self):
         os.environ['CIRCLE_TOKEN'] = 'foo'
         os.environ['GH_OAUTH_TOKEN'] = 'bar'
@@ -32,7 +32,6 @@ class TestIntegration(unittest.TestCase):
 	}
 }'''
             return json.loads(pull_request_response_example)
-
 
     @patch('requests.get', return_value=PullRequestGetMock())
     def test_get_description_section(self, patch1):

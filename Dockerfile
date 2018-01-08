@@ -71,7 +71,10 @@ RUN curl -sSLo google-cloud-sdk.tar.gz https://storage.googleapis.com/cloud-sdk-
     && ./google-cloud-sdk/install.sh --usage-reporting=true --path-update=true \
     && ln -s /google-cloud-sdk/bin/gcloud /usr/local/bin/
 
-RUN pip install pyyaml requests
+RUN pip install -U pip setuptools
+COPY . /app
+WORKDIR /app
+RUN pip install -U .
 
 USER circleci
 
@@ -81,6 +84,5 @@ RUN mkdir -p "$(helm home)/plugins" && \
 # NOTE: Silent parallel
 RUN echo "will cite\n" | parallel --bibtex
 
-COPY scripts/ /usr/local/bin
 
 CMD ["/bin/bash"]

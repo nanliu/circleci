@@ -11,8 +11,9 @@ jobs:
       - run:
           name: unit test
           command: |
-            sudo pip install pytest mock pyyaml requests
-            python -m pytest scripts/test*py
+            sudo pip install pytest mock setuptools pyyaml
+            sudo pip install -U .
+            sudo py.test circleci/test*.py
       - run:
           name: docker build
           command: |
@@ -37,3 +38,22 @@ jobs:
             fi
 
             curl -X POST https://hooks.microbadger.com/images/nanliu/circleci/g05525pyv2nt05fU5l8ZabGZyGE=
+      - run:
+          name: integration tests
+          command: |
+            docker run \
+              --env GKE_KUBECONFIG_DEVOPS \
+              --env CIRCLE_TOKEN \
+              --env GH_OAUTH_TOKEN \
+              --env GOOGLE_AUTH \
+              --env GOOGLE_PROJECT_ID \
+              --env TEST_REPO \
+              "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}" \
+              /bin/bash -ce " \
+                mkdir $HOME/.kube/
+                echo $GKE_KUBECONFIG_DEVOPS | base64 --decode > $HOME/.kube/config
+                echo $GOOGLE_AUTH | base64 -d > /tmp/gcp-key.json
+                gcloud auth activate-service-account --key-file /tmp/gcp-key.json
+                gcloud config set project $GOOGLE_PROJECT_ID
+                sudo pip install pytest
+                sudo -E py.test integration/test*.py"

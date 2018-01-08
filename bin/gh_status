@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import circleci.gh_status
+
+circleci.gh_status.cli()

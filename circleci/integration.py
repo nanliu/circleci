@@ -15,18 +15,23 @@ import re
 import requests
 import yaml
 
-import circleci_trigger
+import circleci.trigger
 
 
 class Pull_Request:
     def __init__(self, url):
         self.url = url
         validate_url(url, '^https?:\/\/github.com\/.*\/pull\/\d+\/?$')
-        #Remove trailing slash
+        # Remove trailing slash
         if url[-1] == '/':
             url = url[:-1]
-        api_pr_url = (url.replace("https://github.com", "https://api.github.com/repos", 1)
-                     ).replace("pull", "pulls")
+        api_pr_url = (
+            url.replace(
+                "https://github.com",
+                "https://api.github.com/repos",
+                1
+            )
+        ).replace("pull", "pulls")
         github_token = os.environ['GH_OAUTH_TOKEN']
         auth_headers = {'Authorization': 'token {}'.format(github_token)}
         pull_request = requests.get(api_pr_url, headers=auth_headers).json()
@@ -62,6 +67,7 @@ class Pull_Request:
             return pr_description[yaml_section]
         return None
 
+
 def validate_url(url, regex):
     """
     Will validate a url against a certain regex rule. Exits on failure
@@ -85,7 +91,7 @@ def trigger_integration(args, pull_requests, current_pull_request, integration_b
     pull_requests (array of strings): array of urls
     current_pull_request (object): pull request object
     """
-    circle = circleci_trigger.CircleCI(args.repo, args.branch)
+    circle = circleci.trigger.CircleCI(args.repo, args.branch)
 
     if pull_requests:
         pull_requests.append(current_pull_request.url)

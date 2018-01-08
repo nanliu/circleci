@@ -2,3 +2,4 @@ pkg
 *pyc
 *swp
 .cache
+.venv

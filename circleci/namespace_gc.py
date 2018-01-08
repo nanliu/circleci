@@ -2,14 +2,16 @@ import argparse
 import json
 import logging
 import subprocess
+import sys
 import re
-from circleci_base import CircleCIBase
+from circleci.base import CircleCIBase
 
 
 class NamespaceGC():
-    def __init__(self, noop):
+    def __init__(self, noop, prefix='circleci'):
         self.circleci = CircleCIBase()
         self.noop = noop
+        self.prefix=prefix
 
     def get_active_namespaces(self):
         active_namespaces = []
@@ -20,7 +22,7 @@ class NamespaceGC():
             if spl_line[1] == 'Active':
                 name = spl_line[0]
                 if name not in ignore:
-                    match = re.search('^circleci-(\d+)$', name)
+                    match = re.search('^{}-(\d+)$'.format(self.prefix), name)
                     if match:
                         active_namespaces.append(match.group(1))
                     else:
@@ -36,14 +38,14 @@ class NamespaceGC():
             'instances',
             'list',
             '--filter',
-            "name:(condor-circleci-*)",
+            "name:(condor-{}-*)".format(self.prefix),
             "--format=json(name)"
         ]
         logging.debug(" ".join(cmd))
         vm_out = subprocess.check_output(cmd)
         vm_names = [
             str(
-                x['name'].strip('condor-circleci-')
+                x['name'].strip('condor-{}-'.format(self.prefix))
             ) for x in json.loads(vm_out)
         ]
         return vm_names
@@ -58,11 +60,11 @@ class NamespaceGC():
         vm_out = subprocess.check_output(cmd)
         build_nums = set()
         for release in vm_out.split():
-            match = re.search('^\S*-circleci-(\d+)$', release)
+            match = re.search('^\S*-{}-(\d+)$'.format(self.prefix), release)
             if match:
                 build_nums.add(match.group(1))
             else:
-                logging.debug("Non-circle release found: {}".format(release))
+                logging.debug("Unexpected release found: {}".format(release))
         # this has lots of dups, but it gets converted to a set later
         return list(build_nums)
 
@@ -80,7 +82,7 @@ class NamespaceGC():
 
     def _run_gcloud_vm_delete_cmd(self, build_nums=[]):
         self._run_delete_cmd(
-            'condor-circleci-',
+            "condor-{}-".format(self.prefix),
             [
                 "gcloud",
                 "compute",
@@ -94,7 +96,7 @@ class NamespaceGC():
 
     def _run_gc_ns_delete_cmd(self, build_nums=[]):
         self._run_delete_cmd(
-            'circleci-',
+            "{}-".format(self.prefix),
             ["kubectl", "delete", "ns"],
             build_nums,
         )
@@ -109,7 +111,7 @@ class NamespaceGC():
         helm_list_out = subprocess.check_output(cmd)
         releases_to_delete = []
         for release in helm_list_out.split():
-            match = re.search('^\S*-circleci-(\d+)$', release)
+            match = re.search('^\S*-{}-(\d+)$'.format(self.prefix), release)
             if match:
                 if match.group(1) in build_nums:
                     releases_to_delete.append(release)
@@ -155,15 +157,23 @@ def arg_parser():
     p = argparse.ArgumentParser()
     p.add_argument('--noop', action='store_true', default=False)
     p.add_argument('--verbose', action='store_true', default=False)
+    p.add_argument('--prefix', type=str, default='circleci')
     p.add_argument('repo', type=str, help='github org/repo')
     return p.parse_args()
 
 
+def init_logger(level=logging.INFO):
+    root = logging.getLogger()
+    root.setLevel(level)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(level)
+    root.addHandler(ch)
+
 def cli():
     args = arg_parser()
     if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        init_logger(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.INFO)
-    gc = NamespaceGC(args.noop)
+        init_logger(level=logging.INFO)
+    gc = NamespaceGC(args.noop, prefix=args.prefix)
     gc.gc_builds(args.repo)

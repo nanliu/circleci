@@ -2,7 +2,7 @@ import os
 import subprocess
 import unittest
 from mock import MagicMock, patch
-from circleci_namespace_gc import NamespaceGC
+from circleci.namespace_gc import NamespaceGC
 
 
 def subprocess_side_effect(arg):
@@ -65,6 +65,8 @@ h-celery-circleci-4710
         )
 
     class CircleCIGetMock():
+        def __init__(self):
+            self.status_code=200
         def json(self):
             return [{'build_num': '123'},
                     {'build_num': '4701'}]

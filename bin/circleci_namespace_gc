@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+import circleci.namespace_gc
+
+circleci.namespace_gc.cli()
