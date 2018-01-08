@@ -11,9 +11,8 @@ jobs:
       - run:
           name: unit test
           command: |
-            sudo pip install pytest mock setuptools pyyaml
-            sudo pip install -U .
-            sudo py.test circleci/test*.py
+            sudo pip install pytest mock pyyaml
+            sudo make test
       - run:
           name: docker build
           command: |
