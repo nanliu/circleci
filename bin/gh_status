@@ -1,5 +1,5 @@
 #!/usr/bin/env python
 
-import circleci.gh_status
+import circleci.github_status
 
-circleci.gh_status.cli()
+circleci.github_status.cli()

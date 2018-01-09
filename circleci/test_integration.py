@@ -55,7 +55,7 @@ class TestIntegration(unittest.TestCase):
            integration.validate_url(test_urls[2],'^https?:\/\/github.com\/.*\/pull\/\d+\/?$')
 
         self.assertTrue('ERROR: Invalid url: {}'.format(test_urls[2]) in context.exception)
-    
+
 
     @patch('requests.get', return_value=PullRequestGetMock())
     def test_generate_build_parameters(self, patch1):
@@ -67,6 +67,7 @@ class TestIntegration(unittest.TestCase):
             {'PR_URL': ['https://github.com/octocat/Hello-world/pull/123', 'https://github.com/octocat/Hello/pull/124'],
              'CUSTOM_VALUES':
              '{ "Hello_World": {"repo": "Hello-World","tag": "6dcb09b5b57875f334f61aebed695e2e4193db5e"},"Hello_World": {"repo": "Hello-World","tag": "6dcb09b5b57875f334f61aebed695e2e4193db5e"} }',
+             'STATUS_CONTEXT': 'ci/circleci-integration',
              'STATUS_URL': 'https://api.github.com/repos/octocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e,https://api.github.com/repos/octocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e'}
         )
         #Ensure that we ignore status for integration repo
@@ -76,6 +77,7 @@ class TestIntegration(unittest.TestCase):
             circle_master.build_param,
             {'PR_URL': ['https://github.com/octocat/Hello-world/pull/123', 'https://github.com/octocat/Hello/pull/124'],
              'CUSTOM_VALUES': '',
+             'STATUS_CONTEXT': 'ci/circleci-integration',
              'STATUS_URL': ''}
         )
         self.assertEqual(circle_master.branch,'branch-name')
