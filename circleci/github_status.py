@@ -17,12 +17,6 @@ class Github():
             'Content-Type': 'application/json'
         }
 
-    # def get(self, url):
-    #     requests.get(url, headers=self.headers()).json()
-
-    # def post(self, url, data=None):
-    #     requests.get(url, headers=self.headers()).json()
-
 
 class GithubStatus(Github):
     # https://developer.github.com/v3/repos/statuses
@@ -93,7 +87,8 @@ def arg_parser():
 
 
 def update(url, state, target, description, context='ci/circleci-integration'):
-    print GithubStatus().update(state, target, description, context, url=url)
+    print GithubStatus().create_status(
+        state, target, description, context, url=url)
 
 
 def cli():
