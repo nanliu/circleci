@@ -2,16 +2,19 @@ import argparse
 import json
 import os
 from circleci.base import CircleCIBase
-from github_status import GithubStatus
+import gh_status
 
 
 class CircleCI():
-    def __init__(self, repo, branch, context='ci/circleci-integration'):
-        status_url = GithubStatus().format_url('{}/repos/{}/{}/statuses/{}')
+    def __init__(self, repo, branch):
+        status_url = 'https://api.github.com/repos/{}/{}/statuses/{}'.format(
+            os.environ.get('CIRCLE_PROJECT_USERNAME'),
+            os.environ.get('CIRCLE_PROJECT_REPONAME'),
+            os.environ.get('CIRCLE_SHA1')
+        )
         self.build_param = {
             'PR_URL': os.environ.get('CIRCLE_PULL_REQUESTS'),
-            'STATUS_CONTEXT': context,
-            'STATUS_URL': status_url
+            'STATUS_URL': status_url,
         }
         self.circleci = CircleCIBase()
         self.repo = repo
@@ -31,9 +34,6 @@ class CircleCI():
 
         for url in self.build_param['STATUS_URL'].split(','):
             gh_status.update(url, 'pending', self._build_url, msg)
-        for url in self.build_param.split(','):
-            GithubStatus(url).update(
-                args.state, args.target, args.description, args.context)
 
 
 def arg_parser():
