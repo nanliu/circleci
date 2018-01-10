@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 from circleci.base import CircleCIBase
-import gh_status
+import github_status
 
 
 class CircleCI():
@@ -33,7 +33,7 @@ class CircleCI():
         msg = 'The integration build {} started'.format(self._build_num)
 
         for url in self.build_param['STATUS_URL'].split(','):
-            gh_status.update(url, 'pending', self._build_url, msg)
+            github_status.update(url, 'pending', self._build_url, msg)
 
 
 def arg_parser():

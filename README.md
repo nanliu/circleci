@@ -9,3 +9,17 @@ Custom Circle CI container with:
 * helm
 * git-crypt
 * terraform
+
+# Development
+
+* Install `pyenv` and `pyenv-virtualenv`:
+```
+brew install pyenv pyenv-virtualenv
+```
+
+* Setup circleci virtual environment:
+```
+pyenv install 2.7.14
+pyenv virtualenv 2.7.14 circleci
+pyenv activate circleci
+```

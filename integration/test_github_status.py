@@ -1,8 +1,7 @@
 import os
 import subprocess
 import unittest
-import circleci.gh_status
-
+from circleci.github_status import GithubStatus
 
 class TestCircleCIGHStatus(unittest.TestCase):
 
@@ -23,7 +22,7 @@ class TestCircleCIGHStatus(unittest.TestCase):
             target_url,
             desc,
         ])
-        data = circleci.gh_status.get(url2)
+        data = GithubStatus().get_combined_status(url=url2)
         found = False
         for s in  data['statuses']:
             if s['description'] == desc:
