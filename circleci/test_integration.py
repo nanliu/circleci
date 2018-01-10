@@ -18,7 +18,27 @@ class TestIntegration(unittest.TestCase):
     class PullRequestGetMock():
         def json(self):
             pull_request_response_example = r'''{
+	"state":"open",
 	"body": "```\r\npull_requests:\r\n  - https://github.com/octocat/Hello-world/pull/123\r\n```",
+	"head": {
+		"sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+		"ref": "branch-name",
+		"repo": {
+			"owner": {
+				"login": "octocat"
+			},
+			"name": "Hello-World",
+            "full_name": "octocat/Hello-World"
+		}
+	}
+}'''
+            return json.loads(pull_request_response_example)
+
+    class ClosedPullRequestGetMock():
+        def json(self):
+            pull_request_response_example = r'''{
+	"state":"closed",
+	"body": "```\r\npull_requests:\r\n  - https://github.com/octocat/Hello-world/pull/124\r\n```",
 	"head": {
 		"sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
 		"ref": "branch-name",
@@ -79,3 +99,15 @@ class TestIntegration(unittest.TestCase):
              'STATUS_URL': ''}
         )
         self.assertEqual(circle_master.branch,'branch-name')
+
+    @patch('requests.get', return_value=ClosedPullRequestGetMock())
+    def test_closed_pull_request(self, patch1):
+        pull_requests = ['https://github.com/octocat/Hello-world/pull/123','https://github.com/octocat/Hello/pull/124']
+        circle = CircleCI('integration/repo', 'foo')
+        integration.generate_build_parameters(circle, pull_requests)
+        self.assertEqual(
+            circle.build_param,
+            {'PR_URL': ['https://github.com/octocat/Hello-world/pull/123', 'https://github.com/octocat/Hello/pull/124'],
+             'CUSTOM_VALUES':'',
+             'STATUS_URL': ''}
+        )

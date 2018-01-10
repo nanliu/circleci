@@ -41,6 +41,7 @@ class Pull_Request:
         self.owner = pull_request['head']['repo']['owner']['login']
         self.repo_full_name = pull_request['head']['repo']['full_name']
         self.branch = pull_request['head']['ref']
+        self.state = pull_request['state']
 
 
     def get_description_section(self, yaml_section, delimiter):
@@ -118,16 +119,17 @@ def generate_build_parameters(circle, pull_requests):
     for p in pull_requests:
         pull_request = Pull_Request(p)
         if pull_request.repo_full_name.lower() != circle.repo.lower():
-            custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
-                pull_request.repo.replace('-', '_'),
-                pull_request.repo,
-                pull_request.sha1
-            )
-            status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
-                pull_request.owner,
-                pull_request.repo,
-                pull_request.sha1
-            )
+            if pull_request.state == 'open':
+                custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
+                    pull_request.repo.replace('-', '_'),
+                    pull_request.repo,
+                    pull_request.sha1
+                )
+                status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
+                    pull_request.owner,
+                    pull_request.repo,
+                    pull_request.sha1
+                )
         else:
             circle.branch = pull_request.branch
     # Remove trailing comma
