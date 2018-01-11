@@ -66,8 +66,8 @@ class PullRequest(Github):
 
     def get_description_section(self, yaml_section, delimiter):
         """
-        Parses pull request description and generates custom values on circleci.
-        Expects following format in the pull request description.
+        Parses pull request description and generates custom values on
+        circleci. Expects following format in the pull request description.
 
         ```
         pull_requests:
@@ -110,7 +110,7 @@ class Integration():
             if PullRequest(pr).active:
                 result = result + [pr]
             else:
-                print "{} is not open and dropped from integration tests".format(pr)
+                print("{} is not open and dropped from integration tests".format(pr))
         return result
 
     def filter_integration_branch(self, pull_requests):
@@ -118,7 +118,7 @@ class Integration():
         for pr in pull_requests:
             p = PullRequest(pr)
             if p.repo_full_name.lower() == self.repo.lower():
-                print "Switching integration to {} branch {}".format(pr, p.branch)
+                print("Switching integration to {} branch {}".format(pr, p.branch))
                 self.branch = p.branch
             else:
                 result = result + [pr]
@@ -149,7 +149,7 @@ class Integration():
         result = CircleCIBase().trigger_build(self.repo, self.branch, data)
         self.build_num = result['build_num']
         self.build_url = result['build_url']
-        print "Build Number:{}".format(self.build_num)
+        print("Build Number:{}".format(self.build_num))
 
     def update_status(self):
         for url in self.status_urls:

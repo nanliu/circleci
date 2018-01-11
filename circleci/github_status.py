@@ -49,6 +49,7 @@ class GithubStatus(Github):
             'description': description,
             'context': context
         })
+        print('Updating status for commit {}:\n{}'.format(url, data))
         result = requests.post(url, data=data, headers=self.headers())
         return json.loads(result.text)
 
@@ -87,13 +88,13 @@ def arg_parser():
 
 
 def update(url, state, target, description, context='ci/circleci-integration'):
-    print GithubStatus().create_status(
-        state, target, description, context, url=url)
+    print(GithubStatus().create_status(
+        state, target, description, context, url=url))
 
 
 def cli():
     args = arg_parser()
 
     for url in args.url.split(','):
-        print GithubStatus().create_status(
-            args.state, args.target, args.description, args.context, url=url)
+        print(GithubStatus().create_status(
+            args.state, args.target, args.description, context, url=url))
