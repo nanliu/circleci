@@ -3,7 +3,6 @@ import unittest
 import json
 from mock import patch
 
-from circleci.trigger import CircleCI
 import integration
 
 

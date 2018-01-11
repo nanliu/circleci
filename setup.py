@@ -18,7 +18,6 @@ setup(
     scripts=[
         'bin/build_container',
         'bin/circleci_namespace_gc',
-        'bin/circleci_trigger',
         'bin/gh_status',
         'bin/integration',
     ],
