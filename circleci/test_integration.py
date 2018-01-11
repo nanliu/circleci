@@ -119,10 +119,10 @@ class TestIntegration(unittest.TestCase):
     @patch('requests.get', return_value=PullRequestGetMock())
     def test_init(self, req):
         pr = integration.Integration('nanliu/circleci')
-        #self.assertEqual(
-        #    pr.status_urls,
-        #    'https://api.github.com/repos/octocat/Hello-world/statuses/a96e5a6dfba3a96d27bfcbef66717ea51ffeacb8,https://api.github.com/repos/nanliu/circleci/statuses/a96e5a6dfba3a96d27bfcbef66717ea51ffeacb8'
-        #)
+        self.assertEqual(pr.repo, 'nanliu/circleci')
+        self.assertEqual(pr.branch, 'master')
+        self.assertEqual(pr.build_param,  {})
+        self.assertEqual(pr.context,  'ci/circleci-integration')
 
     @patch('requests.get', return_value=PullRequestGetMock())
     def test_filter_active_pr(self, req):
