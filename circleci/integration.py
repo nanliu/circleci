@@ -1,51 +1,79 @@
-"""
-Parses pull request description and generates custom values on circleci. Expects following format
-in the pull request description.
-
-```
-pull_requests:
-- link
-- link
-```
-
-"""
 import argparse
 import os
 import re
 import requests
+import json
 import yaml
 
-import circleci.trigger
+from circleci.base import CircleCIBase
+from circleci.github_status import Github, GithubStatus
 
 
-class Pull_Request:
+class PullRequest(Github):
     def __init__(self, url):
+        Github.__init__(self)
         self.url = url
-        validate_url(url, '^https?:\/\/github.com\/.*\/pull\/\d+\/?$')
-        # Remove trailing slash
-        if url[-1] == '/':
-            url = url[:-1]
-        api_pr_url = (
-            url.replace(
-                "https://github.com",
-                "https://api.github.com/repos",
-                1
-            )
-        ).replace("pull", "pulls")
-        github_token = os.environ['GH_OAUTH_TOKEN']
-        auth_headers = {'Authorization': 'token {}'.format(github_token)}
-        pull_request = requests.get(api_pr_url, headers=auth_headers).json()
-        self.description = pull_request['body']
-        self.repo = pull_request['head']['repo']['name']
-        self.sha1 = pull_request['head']['sha']
-        self.owner = pull_request['head']['repo']['owner']['login']
-        self.repo_full_name = pull_request['head']['repo']['full_name']
-        self.branch = pull_request['head']['ref']
+        self.parse_url(url)
+        self.parse_pr()
 
+    def parse_url(self, url):
+        result = re.search('^https?:\/\/github.com\/(.*)\/(.*)\/pull\/(\d+)\/?$', url)
+        if result is None:
+            raise ValueError('ERROR: Invalid url: ' + url)
+        else:
+            self.owner = result.group(1)
+            self.repo = result.group(2)
+            self.helm_chart_name = self.repo.replace('-', '_')
+            self.number = result.group(3)
+
+    def parse_pr(self):
+        # https://developer.github.com/v3/pulls/
+        # GET /repos/:owner/:repo/pulls/:number
+        url = '{}/repos/{}/{}/pulls/{}'.format(
+            self.github_api,
+            self.owner,
+            self.repo,
+            self.number
+        )
+        pr = requests.get(url, headers=self.headers()).json()
+
+        self.description = pr['body']
+        self.sha = pr['head']['sha']
+        self.repo_full_name = pr['head']['repo']['full_name']
+        self.branch = pr['head']['ref']
+        self.active = pr['state'] == 'open'
+
+        self.status_url = '{}/repos/{}/{}/statuses/{}'.format(
+            self.github_api,
+            self.owner,
+            self.repo,
+            self.sha,
+        )
+
+    def pull_requests(self):
+        prs = self.get_description_section('pull_requests', '```')
+        if prs:
+            return set([self.url] + prs)
+        else:
+            return set([self.url])
+
+    def custom_value(self):
+        return '"{}": {{"repo": "{}","tag": "{}"}}'.format(
+            self.helm_chart_name,
+            self.repo,
+            self.sha
+        )
 
     def get_description_section(self, yaml_section, delimiter):
         """
-        Gets yaml in the pull request description. Otherwise returns None.
+        Parses pull request description and generates custom values on circleci.
+        Expects following format in the pull request description.
+
+        ```
+        pull_requests:
+          - link
+          - link
+        ```
 
         Args:
         yaml_section (string): string used to search for yaml block
@@ -68,107 +96,75 @@ class Pull_Request:
         return None
 
 
-def validate_url(url, regex):
-    """
-    Will validate a url against a certain regex rule. Exits on failure
+class Integration():
+    def __init__(self, repo, branch='master', build_param={}, context='ci/circleci-integration'):
+        self.build_param = build_param
+        self.repo = repo
+        self.branch = branch
+        self.context = context
+        self.status_urls = []
 
-    Args:
-    url (string)
-    regex (string): the regex used to check the url
-    """
-    r = re.compile(regex)
-    if not r.match(url):
-        raise ValueError('ERROR: Invalid url: ' + url)
+    def filter_active_pr(self, pull_requests):
+        result = []
+        for pr in pull_requests:
+            if PullRequest(pr).active:
+                result = result + [pr]
+            else:
+                print "{} is not open and dropped from integration tests".format(pr)
+        return result
 
+    def filter_integration_branch(self, pull_requests):
+        result = []
+        for pr in pull_requests:
+            p = PullRequest(pr)
+            if p.repo_full_name.lower() == self.repo.lower():
+                print "Switching integration to {} branch {}".format(pr, p.branch)
+                self.branch = p.branch
+            else:
+                result = result + [pr]
+        return result
 
-def trigger_integration(args, pull_requests, current_pull_request, integration_branch=None):
-    """
-    Determines build parameters using an array of pull request urls and then
-    triggers an integration
+    def run(self, context='ci/circleci-integration'):
+        if os.environ.get('CIRCLE_PULL_REQUEST'):
+            # NOTE: This is integration for a PR
+            current_pr = PullRequest(os.environ.get('CIRCLE_PULL_REQUEST'))
+            pull_requests = self.filter_active_pr(current_pr.pull_requests())
+            pull_requests = self.filter_integration_branch(pull_requests)
+            # NOTE: make sure current PR is in the set
+            pull_requests = set(pull_requests + [os.environ.get('CIRCLE_PULL_REQUEST')])
+            self.build_param['PR_URL'] = ','.join(pull_requests)
 
-    Args:
-    integration_branch (string): branch to use for integration
-    pull_requests (array of strings): array of urls
-    current_pull_request (object): pull request object
-    """
-    circle = circleci.trigger.CircleCI(args.repo, args.branch)
+            self.status_urls = [ PullRequest(pr).status_url for pr in pull_requests ]
+            self.build_param['STATUS_URL'] = ','.join(self.status_urls)
+            self.build_param['STATUS_CONTEXT'] = self.context
 
-    if pull_requests:
-        pull_requests.append(current_pull_request.url)
-        generate_build_parameters(circle, pull_requests)
-    else:
-        default_build_parameters(args, circle, current_pull_request)
-    print circle.build_param
-    print 'Targeting integration branch {}'.format(circle.branch)
-    circle.integration()
-    circle.status_pending()
+            custom_values = [ PullRequest(pr).custom_value() for pr in pull_requests ]
+            self.build_param['CUSTOM_VALUES'] = '{{ {} }}'.format(','.join(custom_values))
 
+        self.build()
+        self.update_status()
 
-def generate_build_parameters(circle, pull_requests):
-    """
-    Generates build parameters and adds them to the circle object
+    def build(self):
+        data = json.dumps({'build_parameters': self.build_param})
+        result = CircleCIBase().trigger_build(self.repo, self.branch, data)
+        self.build_num = result['build_num']
+        self.build_url = result['build_url']
+        print "Build Number:{}".format(self.build_num)
 
-    Args:
-    circle (object): object being modified
-    pull_requests (array of strings)
-    """
-    circle.build_param['PR_URL'] = pull_requests
-    custom_values = ''
-    status_urls = ''
-    for p in pull_requests:
-        pull_request = Pull_Request(p)
-        if pull_request.repo_full_name.lower() != circle.repo.lower():
-            custom_values = custom_values + '"{}": {{"repo": "{}","tag": "{}"}},'.format(
-                pull_request.repo.replace('-', '_'),
-                pull_request.repo,
-                pull_request.sha1
-            )
-            status_urls = status_urls + 'https://api.github.com/repos/{}/{}/statuses/{},'.format(
-                pull_request.owner,
-                pull_request.repo,
-                pull_request.sha1
-            )
-        else:
-            circle.branch = pull_request.branch
-    # Remove trailing comma
-    if len(custom_values) > 0:
-        custom_values = custom_values[:-1]
-    if len(status_urls) > 0:
-        status_urls = status_urls[:-1]
-    if custom_values:
-        custom_values = '{{ {} }}'.format(custom_values)
-    circle.build_param['CUSTOM_VALUES'] = custom_values
-    circle.build_param['STATUS_URL'] = status_urls
-
-
-def default_build_parameters(args, circle, current_pull_request):
-    """
-    Adds default build parameters to the circle object
-
-    Args:
-    circle (object): object being modified
-    current_pull_request (object): pull request object
-    """
-    if current_pull_request:
-        circle.build_param['PR_URL'] = current_pull_request.url
-        custom_values = '"{}": {{"repo": "{}","tag": "{}"}}'.format(
-            current_pull_request.repo.replace('-', '_'),
-            current_pull_request.repo,
-            current_pull_request.sha1
-        )
-        circle.build_param['CUSTOM_VALUES'] = '{{ {} }}'.format(custom_values)
-    if args.KEY is not None:
-        if len(args.KEY) != len(args.VALUE):
-            raise Exception('each -K key must have matching -V')
-        else:
-            for i, val in enumerate(args.KEY):
-                circle.build_param[val[0]] = args.VALUE[i][0]
+    def update_status(self):
+        for url in self.status_urls:
+            desc = 'The integration build {} started'.format(self.build_num)
+            GithubStatus().create_status(
+                'running', self.build_url, desc, self.context, url=url)
 
 
 def arg_parser():
     p = argparse.ArgumentParser()
     p.add_argument('-K', '--KEY', action='append', nargs=1)
     p.add_argument('-V', '--VALUE', action='append', nargs=1)
+    p.add_argument('-c', '--context', type=str, default='ci/circleci-integration',
+                   help='A string label to differentiate this status from other systems')
+
     p.add_argument('repo', type=str, help='github org/repo')
     p.add_argument('branch', type=str, help='git branch to test')
     return p.parse_args()
@@ -176,11 +172,12 @@ def arg_parser():
 
 def cli():
     args = arg_parser()
-    urls = []
-    current_pull_request = None
-    integration_branch = None
-    pull_request_url = os.environ.get('CIRCLE_PULL_REQUEST')
-    if pull_request_url:
-        current_pull_request = Pull_Request(pull_request_url)
-        urls = current_pull_request.get_description_section('pull_requests', '```')
-    trigger_integration(args, urls, current_pull_request)
+    params = {}
+    if args.KEY is not None:
+        if len(args.KEY) != len(args.VALUE):
+            raise Exception('each -K key must have matching -V')
+        else:
+            for i, val in enumerate(args.KEY):
+                params[val[0]] = args.VALUE[i][0]
+    integration = Integration(args.repo, branch=args.branch, build_param=params, context=args.context)
+    integration.run()
