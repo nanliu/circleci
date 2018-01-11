@@ -124,7 +124,7 @@ class Integration():
                 result = result + [pr]
         return result
 
-    def run(self, context='ci/circleci-integration'):
+    def run(self):
         if os.environ.get('CIRCLE_PULL_REQUEST'):
             # NOTE: This is integration for a PR
             current_pr = PullRequest(os.environ.get('CIRCLE_PULL_REQUEST'))
@@ -155,7 +155,7 @@ class Integration():
         for url in self.status_urls:
             desc = 'The integration build {} started'.format(self.build_num)
             GithubStatus().create_status(
-                'running', self.build_url, desc, self.context, url=url)
+                'pending', self.build_url, desc, self.context, url=url)
 
 
 def arg_parser():

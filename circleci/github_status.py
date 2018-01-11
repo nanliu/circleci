@@ -95,6 +95,10 @@ def update(url, state, target, description, context='ci/circleci-integration'):
 def cli():
     args = arg_parser()
 
+    context = args.context
+    if os.environ.get('STATUS_CONTEXT'):
+        context = os.environ.get('STATUS_CONTEXT')
+
     for url in args.url.split(','):
         print(GithubStatus().create_status(
             args.state, args.target, args.description, context, url=url))
