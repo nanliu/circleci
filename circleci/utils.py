@@ -35,7 +35,7 @@ def digests_to_custom_values(values, digests):
     with open(digests, "r") as image_versions:
         for line in image_versions:
             for chart in charts:
-                if re.search(values[chart]["repo"], line):
+                if re.search('/{}@'.format(values[chart]["repo"]), line):
                     custom_values.append('"{}": {{"repo": "{}@sha256","tag": "{}"}}'.format(
                         chart,
                         values[chart]["repo"],
