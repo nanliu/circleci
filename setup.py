@@ -21,6 +21,7 @@ setup(
         'bin/circleci_trigger',
         'bin/gh_status',
         'bin/integration',
+        'bin/digests_to_custom_values',
     ],
     packages=['circleci'],
     include_package_data=True,

@@ -50,6 +50,6 @@ def arg_parser():
     p.add_argument("digests", type=str, help="file containing docker digests")
     return p.parse_args()
 
-def cli():
+def digests_to_custom_values_cli():
     args = arg_parser()
     print digests_to_custom_values(args.values, args.digests)
