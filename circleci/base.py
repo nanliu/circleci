@@ -58,3 +58,12 @@ class CircleCIBase():
         self.build_url = resp['build_url']
         # print "Build Number: {}".format(self._build_num)
         return resp
+
+    def github_status_pending(self, context=None, url=None):
+        if self.build_url is None:
+            raise Exception('No build has been triggered.')
+        if context is None:
+            context = 'ci/circleci-integration'
+        desc = 'The integration build {} started'.format(self._build_num)
+
+        GithubStatus().create_status('pending', self.build_url, desc, context, url=url)
