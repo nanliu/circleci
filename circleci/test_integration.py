@@ -3,7 +3,7 @@ import unittest
 import json
 from mock import patch
 
-from circleci.github_status import GithubPullRequest, GithubStatus
+from circleci.github import GithubPullRequest, GithubStatus
 import integration
 
 

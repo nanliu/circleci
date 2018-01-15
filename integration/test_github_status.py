@@ -1,7 +1,7 @@
 import os
 import subprocess
 import unittest
-from circleci.github_status import GithubStatus
+from circleci.github import GithubStatus
 
 class TestCircleCIGHStatus(unittest.TestCase):
 

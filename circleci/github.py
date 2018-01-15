@@ -182,7 +182,7 @@ def update(url, state, target, description, context='ci/circleci-integration'):
         state, target, description, context, url=url))
 
 
-def cli():
+def status_cli():
     args = arg_parser()
 
     context = args.context

@@ -4,7 +4,7 @@ import requests
 import json
 
 from circleci.base import CircleCIBase
-from circleci.github_status import GithubPullRequest, GithubStatus
+from circleci.github import GithubPullRequest, GithubStatus
 
 
 class Integration():

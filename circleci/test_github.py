@@ -3,7 +3,19 @@ import unittest
 import json
 from mock import patch
 
-from circleci.github_status import GithubPullRequest, GithubStatus
+from circleci.github import Github, GithubPullRequest, GithubStatus
+
+
+class TestGithub(unittest.TestCase):
+    def test_init(self):
+        with self.assertRaises(Exception) as context:
+            Github()
+            self.assertEqual(context, '')
+
+        os.environ['GH_OAUTH_TOKEN'] = 'GH_TOKEN'
+
+        gh = Github()
+        self.assertEqual(gh.oauth, 'GH_TOKEN')
 
 
 class TestGithubPullRequest(unittest.TestCase):
