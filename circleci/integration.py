@@ -13,13 +13,13 @@ class PullRequest(Github):
     def __init__(self, url):
         Github.__init__(self)
         self.url = url
-        self.parse_url(url)
+        self.parse_url()
         self.parse_pr()
 
-    def parse_url(self, url):
-        result = re.search('^https?:\/\/github.com\/(.*)\/(.*)\/pull\/(\d+)\/?$', url)
+    def parse_url(self):
+        result = re.search('^https?:\/\/github.com\/(.*)\/(.*)\/pull\/(\d+)\/?$', self.url)
         if result is None:
-            raise ValueError('ERROR: Invalid url: ' + url)
+            raise ValueError('ERROR: Invalid url: ' + self.url)
         else:
             self.owner = result.group(1)
             self.repo = result.group(2)
