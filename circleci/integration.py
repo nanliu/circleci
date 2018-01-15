@@ -23,19 +23,20 @@ class PullRequest(Github):
         else:
             self.owner = result.group(1)
             self.repo = result.group(2)
-            self.helm_chart_name = self.repo.replace('-', '_')
             self.number = result.group(3)
+            self.helm_chart_name = self.repo.replace('-', '_')
 
-    def parse_pr(self):
         # https://developer.github.com/v3/pulls/
         # GET /repos/:owner/:repo/pulls/:number
-        url = '{}/repos/{}/{}/pulls/{}'.format(
+        self.pr_api_url = '{}/repos/{}/{}/pulls/{}'.format(
             self.github_api,
             self.owner,
             self.repo,
             self.number
         )
-        pr = requests.get(url, headers=self.headers()).json()
+
+    def parse_pr(self):
+        pr = requests.get(self.pr_api_url, headers=self.headers()).json()
 
         self.description = pr['body']
         self.sha = pr['head']['sha']

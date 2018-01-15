@@ -44,11 +44,13 @@ class TestPullRequest(unittest.TestCase):
         self.assertEqual(pr.repo, 'Hello-World')
         self.assertEqual(pr.number, '1347')
         self.assertEqual(pr.helm_chart_name, 'Hello_World')
+        self.assertEqual(pr.pr_api_url, 'https://api.github.com/repos/octocat/Hello-World/pulls/1347')
 
         pr = integration.PullRequest(test_urls[1])
         self.assertEqual(pr.owner, 'octocat')
         self.assertEqual(pr.repo, 'Hello')
         self.assertEqual(pr.number, '124')
+        self.assertEqual(pr.pr_api_url, 'https://api.github.com/repos/octocat/Hello/pulls/124')
 
         with self.assertRaises(ValueError) as context:
             integration.PullRequest(test_urls[2])
