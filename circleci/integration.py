@@ -1,100 +1,10 @@
 import argparse
 import os
-import re
 import requests
 import json
-import yaml
 
 from circleci.base import CircleCIBase
-from circleci.github_status import Github, GithubStatus
-
-
-class PullRequest(Github):
-    def __init__(self, url):
-        Github.__init__(self)
-        self.url = url
-        self.parse_url()
-        self.parse_pr()
-
-    def parse_url(self):
-        result = re.search('^https?:\/\/github.com\/(.*)\/(.*)\/pull\/(\d+)\/?$', self.url)
-        if result is None:
-            raise ValueError('ERROR: Invalid url: ' + self.url)
-        else:
-            self.owner = result.group(1)
-            self.repo = result.group(2)
-            self.number = result.group(3)
-            self.helm_chart_name = self.repo.replace('-', '_')
-
-        # https://developer.github.com/v3/pulls/
-        # GET /repos/:owner/:repo/pulls/:number
-        self.pr_api_url = '{}/repos/{}/{}/pulls/{}'.format(
-            self.github_api,
-            self.owner,
-            self.repo,
-            self.number
-        )
-
-    def parse_pr(self):
-        pr = requests.get(self.pr_api_url, headers=self.headers()).json()
-
-        self.description = pr['body']
-        self.sha = pr['head']['sha']
-        self.repo_full_name = pr['head']['repo']['full_name']
-        self.branch = pr['head']['ref']
-        self.active = pr['state'] == 'open'
-
-        self.status_url = '{}/repos/{}/{}/statuses/{}'.format(
-            self.github_api,
-            self.owner,
-            self.repo,
-            self.sha,
-        )
-
-    def pull_requests(self):
-        prs = self.get_description_section('pull_requests', '```')
-        if prs:
-            return set([self.url] + prs)
-        else:
-            return set([self.url])
-
-    def custom_value(self):
-        return '"{}": {{"repo": "{}","tag": "{}"}}'.format(
-            self.helm_chart_name,
-            self.repo,
-            self.sha
-        )
-
-    def get_description_section(self, yaml_section, delimiter):
-        """
-        Parses pull request description and generates custom values on
-        circleci. Expects following format in the pull request description.
-
-        ```
-        pull_requests:
-          - link
-          - link
-        ```
-
-        Args:
-        yaml_section (string): string used to search for yaml block
-        pr_description (string): Pull request description
-        delimeter (string): determines how to split pull request description
-
-        Returns:
-        (string): yaml from pull request
-        """
-        if not self.description:
-            return None
-        description_array = self.description.split(delimiter)
-
-        yaml_indentifier = '{}:'.format(yaml_section)
-        for string in description_array:
-            if yaml_indentifier not in string:
-                continue
-            pr_description = yaml.load(string.strip())
-            return pr_description[yaml_section]
-        return None
+from circleci.github_status import GithubPullRequest, GithubStatus
 
 
 class Integration():
@@ -108,7 +18,7 @@ class Integration():
     def filter_active_pr(self, pull_requests):
         result = []
         for pr in pull_requests:
-            if PullRequest(pr).active:
+            if GithubPullRequest(pr).active:
                 result = result + [pr]
             else:
                 print("{} is not open and dropped from integration tests".format(pr))
@@ -117,7 +27,7 @@ class Integration():
     def filter_integration_branch(self, pull_requests):
         result = []
         for pr in pull_requests:
-            p = PullRequest(pr)
+            p = GithubPullRequest(pr)
             if p.repo_full_name.lower() == self.repo.lower():
                 print("Switching integration to {} branch {}".format(pr, p.branch))
                 self.branch = p.branch
@@ -128,18 +38,18 @@ class Integration():
     def run(self):
         if os.environ.get('CIRCLE_PULL_REQUEST'):
             # NOTE: This is integration for a PR
-            current_pr = PullRequest(os.environ.get('CIRCLE_PULL_REQUEST'))
+            current_pr = GithubPullRequest(os.environ.get('CIRCLE_PULL_REQUEST'))
             pull_requests = self.filter_active_pr(current_pr.pull_requests())
             pull_requests = self.filter_integration_branch(pull_requests)
             # NOTE: make sure current PR is in the set
             pull_requests = set(pull_requests + [os.environ.get('CIRCLE_PULL_REQUEST')])
             self.build_param['PR_URL'] = ','.join(pull_requests)
 
-            self.status_urls = [ PullRequest(pr).status_url for pr in pull_requests ]
+            self.status_urls = [ GithubPullRequest(pr).status_url for pr in pull_requests ]
             self.build_param['STATUS_URL'] = ','.join(self.status_urls)
             self.build_param['STATUS_CONTEXT'] = self.context
 
-            custom_values = [ PullRequest(pr).custom_value() for pr in pull_requests ]
+            custom_values = [ GithubPullRequest(pr).custom_value() for pr in pull_requests ]
             self.build_param['CUSTOM_VALUES'] = '{{ {} }}'.format(','.join(custom_values))
 
         self.build()
