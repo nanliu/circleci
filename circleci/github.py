@@ -1,7 +1,9 @@
 import argparse
 import json
 import os
+import re
 import requests
+import yaml
 
 
 class Github():
@@ -16,6 +18,94 @@ class Github():
             'Authorization': 'token {}'.format(self.oauth),
             'Content-Type': 'application/json'
         }
+
+
+class GithubPullRequest(Github):
+    def __init__(self, url):
+        Github.__init__(self)
+        self.url = url
+        self.parse_url()
+        self.parse_pr()
+
+    def parse_url(self):
+        result = re.search('^https?:\/\/github.com\/(.*)\/(.*)\/pull\/(\d+)\/?$', self.url)
+        if result is None:
+            raise ValueError('ERROR: Invalid url: ' + self.url)
+        else:
+            self.owner = result.group(1)
+            self.repo = result.group(2)
+            self.number = result.group(3)
+            self.helm_chart_name = self.repo.replace('-', '_')
+
+        # https://developer.github.com/v3/pulls/
+        # GET /repos/:owner/:repo/pulls/:number
+        self.pr_api_url = '{}/repos/{}/{}/pulls/{}'.format(
+            self.github_api,
+            self.owner,
+            self.repo,
+            self.number
+        )
+
+    def parse_pr(self):
+        pr = requests.get(self.pr_api_url, headers=self.headers()).json()
+
+        self.description = pr['body']
+        self.sha = pr['head']['sha']
+        self.repo_full_name = pr['head']['repo']['full_name']
+        self.branch = pr['head']['ref']
+        self.active = pr['state'] == 'open'
+
+        self.status_url = '{}/repos/{}/{}/statuses/{}'.format(
+            self.github_api,
+            self.owner,
+            self.repo,
+            self.sha,
+        )
+
+    def pull_requests(self):
+        prs = self.get_description_section('pull_requests', '```')
+        if prs:
+            return set([self.url] + prs)
+        else:
+            return set([self.url])
+
+    def custom_value(self):
+        return '"{}": {{"repo": "{}","tag": "{}"}}'.format(
+            self.helm_chart_name,
+            self.repo,
+            self.sha
+        )
+
+    def get_description_section(self, yaml_section, delimiter):
+        """
+        Parses pull request description and generates custom values on
+        circleci. Expects following format in the pull request description.
+
+        ```
+        pull_requests:
+          - link
+          - link
+        ```
+
+        Args:
+        yaml_section (string): string used to search for yaml block
+        pr_description (string): Pull request description
+        delimeter (string): determines how to split pull request description
+
+        Returns:
+        (string): yaml from pull request
+        """
+        if not self.description:
+            return None
+        description_array = self.description.split(delimiter)
+
+        yaml_indentifier = '{}:'.format(yaml_section)
+        for string in description_array:
+            if yaml_indentifier not in string:
+                continue
+            pr_description = yaml.load(string.strip())
+            return pr_description[yaml_section]
+        return None
 
 
 class GithubStatus(Github):
@@ -92,7 +182,7 @@ def update(url, state, target, description, context='ci/circleci-integration'):
         state, target, description, context, url=url))
 
 
-def cli():
+def status_cli():
     args = arg_parser()
 
     context = args.context
