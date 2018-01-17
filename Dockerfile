@@ -78,6 +78,9 @@ RUN pip install -U .
 
 USER circleci
 
+RUN pip install awscli --upgrade --user
+ENV PATH "/home/circleci/.local/bin:${PATH}"
+
 RUN mkdir -p "$(helm home)/plugins" && \
     helm plugin install https://github.com/databus23/helm-diff
 
