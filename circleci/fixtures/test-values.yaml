@@ -1,0 +1,6 @@
+mysql:
+  tag: latest
+  repo: mysql
+mongo:
+  tag: latest
+  repo: mongo

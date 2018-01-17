@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import circleci.utils
+
+circleci.utils.digests_to_custom_values_cli()
