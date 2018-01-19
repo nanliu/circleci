@@ -109,6 +109,7 @@ h-celery-circleci-4710
             [
                 'helm',
                 'delete',
+                '--purge',
                 'cloud-testing-circleci-4706',
                 'cloud-testing-circleci-4707',
                 'condor-service-circleci-4702',

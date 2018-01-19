@@ -117,7 +117,7 @@ class NamespaceGC():
                     releases_to_delete.append(release)
         self._run_delete_cmd(
             '',
-            ["helm", "delete"],
+            ["helm", "delete", "--purge"],
             releases_to_delete,
         )
 
