@@ -77,12 +77,6 @@ class GithubPullRequest(Github):
             }
         }
 
-        return '"{}": {{"repo": "{}","tag": "{}"}}'.format(
-            self.helm_chart_name,
-            self.repo,
-            self.sha
-        )
-
     def get_description_section(self, yaml_section, delimiter):
         """
         Parses pull request description and generates custom values on

@@ -122,3 +122,12 @@ class TestIntegration(unittest.TestCase):
             pr.build_param['STATUS_URL'],
             'https://api.github.com/repos/nanliu/circleci/statuses/a96e5a6dfba3a96d27bfcbef66717ea51ffeacb8'
         )
+
+        pr = integration.Integration(
+            'nanliu/circleci',
+            build_param={"CUSTOM_VALUES": 'bad' }
+        )
+        pr.build = MagicMock()
+        pr.update_status = MagicMock()
+        with self.assertRaises(ValueError) as context:
+            pr.run()

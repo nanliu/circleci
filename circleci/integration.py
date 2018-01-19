@@ -54,7 +54,11 @@ class Integration():
                 custom_values = merge(custom_values, GithubPullRequest(pr).custom_value())
 
             if 'CUSTOM_VALUES' in self.build_param:
-                user_values = json.loads(self.build_param['CUSTOM_VALUES'])
+                try:
+                    user_values = json.loads(self.build_param['CUSTOM_VALUES'])
+                except ValueError:
+                    print('Unable to parse json value: {}'.format(self.build_param['CUSTOM_VALUES']))
+                    raise
                 self.build_param['CUSTOM_VALUES'] = json.dumps(merge(user_values, custom_values))
             else:
                 self.build_param['CUSTOM_VALUES'] = json.dumps(custom_values)
