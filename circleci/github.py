@@ -70,6 +70,13 @@ class GithubPullRequest(Github):
             return set([self.url])
 
     def custom_value(self):
+        return {
+            self.helm_chart_name: {
+                'repo': self.repo,
+                'tag': self.sha
+            }
+        }
+
         return '"{}": {{"repo": "{}","tag": "{}"}}'.format(
             self.helm_chart_name,
             self.repo,

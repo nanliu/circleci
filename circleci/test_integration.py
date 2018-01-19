@@ -1,7 +1,7 @@
 import os
 import unittest
 import json
-from mock import patch
+from mock import MagicMock, patch
 
 from circleci.github import GithubPullRequest, GithubStatus
 import integration
@@ -73,4 +73,52 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(
             pr.branch,
             'test_branch'
+        )
+
+    @patch('requests.get', return_value=PullRequestGetMock())
+    def test_run(self, req):
+        pr = integration.Integration('nanliu/circleci')
+        pr.build = MagicMock()
+        pr.update_status = MagicMock()
+        pr.run()
+        self.assertEqual(
+            pr.build_param['PR_URL'],
+            'https://github.com/nanliu/circleci/pull/32'
+        )
+        self.assertEqual(
+            pr.build_param['CUSTOM_VALUES'],
+            '{"circleci": {"repo": "circleci", "tag": "a96e5a6dfba3a96d27bfcbef66717ea51ffeacb8"}}'
+        )
+        self.assertEqual(
+            pr.build_param['STATUS_CONTEXT'],
+            'ci/circleci-integration'
+        )
+        self.assertEqual(
+            pr.build_param['STATUS_URL'],
+            'https://api.github.com/repos/nanliu/circleci/statuses/a96e5a6dfba3a96d27bfcbef66717ea51ffeacb8'
+        )
+
+        pr = integration.Integration(
+            'nanliu/circleci',
+            build_param={"CUSTOM_VALUES": '{"test": {"1": "2"} }' },
+            context='ci/circleci-int'
+        )
+        pr.build = MagicMock()
+        pr.update_status = MagicMock()
+        pr.run()
+        self.assertEqual(
+            pr.build_param['PR_URL'],
+            'https://github.com/nanliu/circleci/pull/32'
+        )
+        self.assertEqual(
+            pr.build_param['CUSTOM_VALUES'],
+            '{"test": {"1": "2"}, "circleci": {"repo": "circleci", "tag": "a96e5a6dfba3a96d27bfcbef66717ea51ffeacb8"}}'
+        )
+        self.assertEqual(
+            pr.build_param['STATUS_CONTEXT'],
+            'ci/circleci-int'
+        )
+        self.assertEqual(
+            pr.build_param['STATUS_URL'],
+            'https://api.github.com/repos/nanliu/circleci/statuses/a96e5a6dfba3a96d27bfcbef66717ea51ffeacb8'
         )

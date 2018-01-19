@@ -1,8 +1,8 @@
 import argparse
 import os
-import requests
 import json
 
+from jsonmerge import merge
 from circleci.base import CircleCIBase
 from circleci.github import GithubPullRequest, GithubStatus
 
@@ -49,8 +49,15 @@ class Integration():
             self.build_param['STATUS_URL'] = ','.join(self.status_urls)
             self.build_param['STATUS_CONTEXT'] = self.context
 
-            custom_values = [ GithubPullRequest(pr).custom_value() for pr in pull_requests ]
-            self.build_param['CUSTOM_VALUES'] = '{{ {} }}'.format(','.join(custom_values))
+            custom_values = {}
+            for pr in pull_requests:
+                custom_values = merge(custom_values, GithubPullRequest(pr).custom_value())
+
+            if 'CUSTOM_VALUES' in self.build_param:
+                user_values = json.loads(self.build_param['CUSTOM_VALUES'])
+                self.build_param['CUSTOM_VALUES'] = json.dumps(merge(user_values, custom_values))
+            else:
+                self.build_param['CUSTOM_VALUES'] = json.dumps(custom_values)
 
         self.build()
         self.update_status()
