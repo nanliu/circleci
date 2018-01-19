@@ -12,13 +12,27 @@ class Github():
         self.oauth = os.environ.get('GH_OAUTH_TOKEN')
         if self.oauth is None:
             raise Exception('Missing environment variable GH_OAUTH_TOKEN')
-
-    def headers(self):
-        return {
+        self.headers = {
             'Authorization': 'token {}'.format(self.oauth),
             'Content-Type': 'application/json'
         }
 
+    def request(self, verb, url, data=None):
+        if verb == 'get':
+            resp = requests.get(url, headers=self.headers)
+        elif verb == 'post':
+            resp = requests.post(url, headers=self.headers, data=data)
+
+        if 200 <= resp.status_code < 300:
+            return resp.json()
+        else:
+            print resp.text
+
+    def get(self, url):
+        return self.request('get', url)
+
+    def post(self, url, data):
+        return self.request('post', url, data=data)
 
 class GithubPullRequest(Github):
     def __init__(self, url):
@@ -47,7 +61,7 @@ class GithubPullRequest(Github):
         )
 
     def parse_pr(self):
-        pr = requests.get(self.pr_api_url, headers=self.headers()).json()
+        pr = self.get(self.pr_api_url)
 
         self.description = pr['body']
         self.sha = pr['head']['sha']
@@ -140,8 +154,7 @@ class GithubStatus(Github):
             'context': context
         })
         print('Updating status for commit {}:\n{}'.format(url, data))
-        result = requests.post(url, data=data, headers=self.headers())
-        return json.loads(result.text)
+        return self.post(url, data)
 
     def get_combined_status(self, url=None, owner=None, repo=None, ref=None):
         # https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
@@ -150,8 +163,7 @@ class GithubStatus(Github):
             url = self.format_url('{}/repos/{}/{}/commits/{}/status',
                                   owner=owner, repo=repo, sha=ref)
 
-        result = requests.get(url, headers=self.headers())
-        return json.loads(result.text)
+        return self.get(url)
 
 
 def arg_parser():

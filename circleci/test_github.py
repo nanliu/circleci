@@ -20,6 +20,10 @@ class TestGithub(unittest.TestCase):
 
 class TestGithubPullRequest(unittest.TestCase):
     class PullRequestGetMock():
+        def __init__(self):
+            self.status_code = 200
+            self.text = '{}'
+
         def json(self):
             return json.loads(r'''{
   "body": "```\r\npull_requests:\r\n  - https://github.com/octocat/Hello-world/pull/123\r\n```",
@@ -97,7 +101,11 @@ class TestGithubPullRequest(unittest.TestCase):
 class TestGithubStatus(unittest.TestCase):
     class RequestMock():
         def __init__(self):
+            self.status_code = 200
             self.text = '{}'
+
+        def json(self):
+            return {}
 
     def setUp(self):
         os.environ['GH_OAUTH_TOKEN'] = 'GH_TOKEN'
@@ -115,7 +123,7 @@ class TestGithubStatus(unittest.TestCase):
     def test_headers(self):
         pr = GithubStatus()
         self.assertEqual(
-            pr.headers(),
+            pr.headers,
             {
                 'Authorization': 'token GH_TOKEN',
                 'Content-Type': 'application/json'

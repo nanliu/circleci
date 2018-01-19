@@ -16,6 +16,9 @@ class TestIntegration(unittest.TestCase):
         os.environ['CIRCLE_PULL_REQUEST'] = 'https://github.com/nanliu/circleci/pull/32'
 
     class PullRequestGetMock():
+        def __init__(self):
+            self.status_code = 200
+
         def json(self):
             pull_request_response_example = r'''{
   "body": "```\r\npull_requests:\r\n  - https://github.com/octocat/Hello-world/pull/123\r\n```",
