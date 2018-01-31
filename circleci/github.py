@@ -26,7 +26,8 @@ class Github():
         if 200 <= resp.status_code < 300:
             return resp.json()
         else:
-            print resp.text
+            print("{} {} request failed".format(url, verb))
+            print(resp.text)
 
     def get(self, url):
         return self.request('get', url)
