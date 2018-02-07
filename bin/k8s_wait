@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import circleci.k8s
+
+circleci.k8s.cli()
