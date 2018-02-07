@@ -20,6 +20,7 @@ setup(
         'bin/circleci_namespace_gc',
         'bin/gh_status',
         'bin/integration',
+        'bin/k8s_wait',
         'bin/digests_to_custom_values',
     ],
     packages=['circleci'],

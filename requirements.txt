@@ -1,3 +1,4 @@
 jsonmerge
 pyyaml
 requests
+kubernetes
